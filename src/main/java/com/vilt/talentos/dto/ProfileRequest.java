@@ -8,7 +8,6 @@ public record ProfileRequest(
     // Identificação
     String photoUrl,
 
-    @NotBlank(message = "Título da vaga é obrigatório.")
     String jobTitle,
 
     // Perfil Técnico

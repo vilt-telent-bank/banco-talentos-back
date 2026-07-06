@@ -107,4 +107,72 @@ public class Profile extends BaseAuditableEntity {
     @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<ProfileSkill> skills = new ArrayList<>();
+
+    // ── Ciclo de Vida do Recurso ──────────────────────────────────────────────
+
+    // Seção 1 — Status automatizado e matrícula
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status_recurso", nullable = false)
+    @Builder.Default
+    private StatusRecurso statusRecurso = StatusRecurso.DISPONIVEL;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status_matricula", nullable = false)
+    @Builder.Default
+    private StatusMatricula statusMatricula = StatusMatricula.NAO_NECESSARIO;
+
+    @Column(name = "numero_matricula")
+    private String numeroMatricula;
+
+    @Column(name = "data_solicitacao_matricula")
+    private java.time.LocalDate dataSolicitacaoMatricula;
+
+    @Column(name = "observacoes_matricula", columnDefinition = "TEXT")
+    private String observacoesMatricula;
+
+    // Seção 2 — Máquina do cliente
+    @Column(name = "possui_maquina_cliente", nullable = false)
+    @Builder.Default
+    private boolean possuiMaquinaCliente = false;
+
+    @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<Maquina> maquinas = new ArrayList<>();
+
+    // Seção 3 — Proposta técnica
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status_proposta_tecnica")
+    private StatusPropostaTecnica statusPropostaTecnica;
+
+    // Seção 4 — Dados da contratação
+    @Column(name = "area_contratante")
+    private String areaContratante;
+
+    @Column(name = "centro_custo_contratante")
+    private String centroCustoContratante;
+
+    @Column(name = "data_entrada_projeto")
+    private java.time.LocalDate dataEntradaProjeto;
+
+    @Column(name = "recurso_billable")
+    private Boolean recursoBillable;
+
+    @Column(name = "onboarding_porto_realizado")
+    private Boolean onboardingPortoRealizado;
+
+    @Column(name = "gerente_projeto")
+    private String gerenteProjeto;
+
+    @Column(name = "projeto_alocacao")
+    private String projetoAlocacao;
+
+    @Column(name = "squad_alocacao")
+    private String squadAlocacao;
+
+    // Seção 5 — Contato e endereço (editável pelo próprio recurso)
+    @Column(name = "contato")
+    private String contato;
+
+    @Column(name = "endereco", columnDefinition = "TEXT")
+    private String endereco;
 }

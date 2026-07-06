@@ -27,7 +27,7 @@ class AuthControllerTest extends BaseControllerTest {
     @Test
     void login_ValidRequest_ReturnsAuthResponse() throws Exception {
         AuthRequest req = new AuthRequest("test@vilt-group.com", "password123");
-        AuthResponse res = new AuthResponse("jwt-token", "Test User", "test@vilt-group.com", "USER");
+        AuthResponse res = new AuthResponse("jwt-token", "Test User", "test@vilt-group.com", "RESOURCE", true);
 
         when(authService.login(any(AuthRequest.class))).thenReturn(res);
 
@@ -36,7 +36,8 @@ class AuthControllerTest extends BaseControllerTest {
                         .content(asJsonString(req)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").value("jwt-token"))
-                .andExpect(jsonPath("$.name").value("Test User"));
+                .andExpect(jsonPath("$.name").value("Test User"))
+                .andExpect(jsonPath("$.hasProfile").value(true));
     }
 
     @Test
