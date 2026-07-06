@@ -1,11 +1,14 @@
 package com.vilt.talentos.service;
 
 import com.vilt.talentos.config.AppProperties;
+import com.vilt.talentos.dto.AuthRequest;
 import com.vilt.talentos.dto.PasswordResetRequest;
+import com.vilt.talentos.entity.DomainStatus;
 import com.vilt.talentos.entity.User;
 import com.vilt.talentos.exception.BadRequestException;
 import com.vilt.talentos.mapper.UserMapper;
 import com.vilt.talentos.repository.GroupRepository;
+import com.vilt.talentos.repository.ProfileRepository;
 import com.vilt.talentos.repository.UserRepository;
 import com.vilt.talentos.security.JwtService;
 import org.junit.jupiter.api.Test;
@@ -18,10 +21,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,6 +36,8 @@ class AuthServiceTest {
 
     @Mock
     private UserRepository userRepo;
+    @Mock
+    private ProfileRepository profileRepo;
     @Mock
     private GroupRepository groupRepo;
     @Mock
@@ -44,6 +53,53 @@ class AuthServiceTest {
 
     @InjectMocks
     private AuthService authService;
+
+    @Test
+    void login_UserWithProfile_ReturnsHasProfileTrue() {
+        UUID userId = UUID.randomUUID();
+        User user = User.builder()
+                .id(userId)
+                .email("test@vilt-group.com")
+                .name("Test User")
+                .password("encoded")
+                .emailVerified(true)
+                .status(DomainStatus.ACTIVE)
+                .build();
+
+        when(userRepo.findByEmailIgnoreCase("test@vilt-group.com")).thenReturn(Optional.of(user));
+        when(appProperties.getAllowedEmailDomain()).thenReturn("vilt-group.com");
+        when(passwordEncoder.matches("password123", "encoded")).thenReturn(true);
+        when(profileRepo.existsByUserId(userId)).thenReturn(true);
+        when(jwtService.generate(eq(userId.toString()), anyMap())).thenReturn("jwt-token");
+
+        var response = authService.login(new AuthRequest("test@vilt-group.com", "password123"));
+
+        assertTrue(response.hasProfile());
+        assertEquals("jwt-token", response.token());
+    }
+
+    @Test
+    void login_UserWithoutProfile_ReturnsHasProfileFalse() {
+        UUID userId = UUID.randomUUID();
+        User user = User.builder()
+                .id(userId)
+                .email("test@vilt-group.com")
+                .name("Test User")
+                .password("encoded")
+                .emailVerified(true)
+                .status(DomainStatus.ACTIVE)
+                .build();
+
+        when(userRepo.findByEmailIgnoreCase("test@vilt-group.com")).thenReturn(Optional.of(user));
+        when(appProperties.getAllowedEmailDomain()).thenReturn("vilt-group.com");
+        when(passwordEncoder.matches("password123", "encoded")).thenReturn(true);
+        when(profileRepo.existsByUserId(userId)).thenReturn(false);
+        when(jwtService.generate(eq(userId.toString()), anyMap())).thenReturn("jwt-token");
+
+        var response = authService.login(new AuthRequest("test@vilt-group.com", "password123"));
+
+        assertFalse(response.hasProfile());
+    }
 
     @Test
     void resetPassword_ValidToken_UpdatesPassword() {

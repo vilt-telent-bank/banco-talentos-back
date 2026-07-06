@@ -10,6 +10,7 @@ import com.vilt.talentos.exception.ResourceNotFoundException;
 import com.vilt.talentos.exception.UnauthorizedException;
 import com.vilt.talentos.mapper.UserMapper;
 import com.vilt.talentos.repository.GroupRepository;
+import com.vilt.talentos.repository.ProfileRepository;
 import com.vilt.talentos.repository.UserRepository;
 import com.vilt.talentos.security.JwtService;
 import com.vilt.talentos.config.AppProperties;
@@ -31,6 +32,7 @@ import java.util.UUID;
 public class AuthService {
 
     private final UserRepository userRepo;
+    private final ProfileRepository profileRepo;
     private final GroupRepository groupRepo;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
@@ -67,7 +69,13 @@ public class AuthService {
                 "role", user.getRole().name()
         ));
 
-        return new AuthResponse(token, user.getName(), user.getEmail(), user.getRole().name());
+        return new AuthResponse(
+                token,
+                user.getName(),
+                user.getEmail(),
+                user.getRole().name(),
+                profileRepo.existsByUserId(user.getId())
+        );
     }
 
     public void register(RegisterRequest request){
