@@ -16,6 +16,8 @@ public interface ProfileRepository extends JpaRepository<Profile, UUID>, JpaSpec
     @EntityGraph(attributePaths = {"user", "skills", "skills.skill"})
     Optional<Profile> findByUserId(UUID userId);
 
+    boolean existsByUserId(UUID userId);
+
     @EntityGraph(attributePaths = {"user", "skills", "skills.skill"})
     Page<Profile> findByStatus(DomainStatus status, Pageable pageable);
 
