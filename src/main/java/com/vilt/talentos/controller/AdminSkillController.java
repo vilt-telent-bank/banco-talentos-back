@@ -29,12 +29,13 @@ public class AdminSkillController {
 
     @GetMapping
     @Operation(summary = "Listar skills para gerenciamento (Admin)",
-            description = "Retorna skills com dados agregados de recursos (avatares, média de proficiência) e suporte a filtros por nome e categoria.")
+            description = "Retorna skills com dados agregados de recursos (avatares, média de proficiência) e suporte a filtros por nome, categoria e status (active=true/false, omitir para todos).")
     public Page<AdminSkillListResponse> listForManagement(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) SkillCategory category,
+            @RequestParam(required = false) Boolean active,
             @PageableDefault(size = 20) Pageable pageable) {
-        return skillService.getAdminSkills(name, category, pageable);
+        return skillService.getAdminSkills(name, category, active, pageable);
     }
 
     @PostMapping

@@ -42,7 +42,7 @@ class AdminSkillControllerTest extends BaseControllerTest {
                 "Linguagem de programação", SkillCategory.BACKEND,
                 10L, 7.5, List.of("https://example.com/avatar1.png")
         );
-        when(skillService.getAdminSkills(isNull(), isNull(), any(Pageable.class)))
+        when(skillService.getAdminSkills(isNull(), isNull(), isNull(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(response)));
 
         mockMvc.perform(get("/api/v1/admin/skills"))

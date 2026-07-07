@@ -10,13 +10,14 @@ import com.vilt.talentos.exception.ResourceNotFoundException;
 import com.vilt.talentos.mapper.SkillMapper;
 import com.vilt.talentos.repository.SkillRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Example;
-import org.springframework.data.domain.ExampleMatcher;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -52,21 +53,30 @@ public class SkillService {
     }
 
     @Transactional(readOnly = true)
-    public Page<AdminSkillListResponse> getAdminSkills(String name, SkillCategory category, Pageable pageable) {
+    public Page<AdminSkillListResponse> getAdminSkills(
+            String nameFilter,
+            SkillCategory categoryFilter,
+            Boolean isActiveFilter,
+            Pageable pageable
+    ) {
+        Specification<Skill> filterSpecification = (root, query, criteriaBuilder) -> {
+            List<Predicate> filterPredicates = new ArrayList<>();
 
-        Skill filterSample = Skill.builder()
-                .active(true)
-                .name(name != null && !name.isBlank() ? name.trim() : null)
-                .category(category)
-                .build();
+            if (isActiveFilter != null) {
+                filterPredicates.add(criteriaBuilder.equal(root.get("active"), isActiveFilter));
+            }
+            if (nameFilter != null && !nameFilter.isBlank()) {
+                String namePattern = "%" + nameFilter.trim().toUpperCase() + "%";
+                filterPredicates.add(criteriaBuilder.like(criteriaBuilder.upper(root.get("name")), namePattern));
+            }
+            if (categoryFilter != null) {
+                filterPredicates.add(criteriaBuilder.equal(root.get("category"), categoryFilter));
+            }
 
-        ExampleMatcher matcher = ExampleMatcher.matching()
-                .withIgnoreCase()
-                .withStringMatcher(ExampleMatcher.StringMatcher.CONTAINING)
-                .withIgnorePaths("id", "type", "profileSkills");
+            return criteriaBuilder.and(filterPredicates.toArray(new Predicate[0]));
+        };
 
-        Example<Skill> example = Example.of(filterSample, matcher);
-        Page<Skill> page = skillRepo.findAll(example, pageable);
+        Page<Skill> page = skillRepo.findAll(filterSpecification, pageable);
 
         return page.map(skill -> {
             long resourcesCount = skill.getProfileSkills().size();
@@ -96,24 +106,24 @@ public class SkillService {
             );
         });
     }
-    public SkillResponse create(SkillRequest request) {
-        String nameUpper = request.name().trim().toUpperCase();
 
-        return skillRepo.findByName(nameUpper)
-                .map(existing -> {
-                    if (!existing.isActive()) {
-                        existing.setActive(true);
-                        existing.setDescription(request.description());
-                        existing.setCategory(request.category());
-                        return mapper.toResponse(skillRepo.save(existing));
-                    }
-                    return mapper.toResponse(existing);
-                })
-                .orElseGet(() -> {
-                    Skill skill = mapper.toEntity(request);
-                    skill.setName(nameUpper);
-                    return mapper.toResponse(skillRepo.save(skill));
-                });
+    public SkillResponse create(SkillRequest request) {
+        String normalizedSkillName = request.name().trim().toUpperCase();
+
+        skillRepo.findByName(normalizedSkillName).ifPresent(existingSkill -> {
+            if (!existingSkill.isActive()) {
+                throw new ConflictException(
+                    String.format("A skill '%s' já está cadastrada, porém encontra-se inativa. Acesse o filtro de skills inativas para reativá-la.", existingSkill.getName())
+                );
+            }
+            throw new ConflictException(
+                String.format("Já existe uma skill ativa com o nome '%s'.", existingSkill.getName())
+            );
+        });
+
+        Skill skill = mapper.toEntity(request);
+        skill.setName(normalizedSkillName);
+        return mapper.toResponse(skillRepo.save(skill));
     }
 
     public SkillResponse update(UUID id, SkillRequest request) {
