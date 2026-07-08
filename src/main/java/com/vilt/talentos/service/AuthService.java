@@ -183,6 +183,10 @@ public class AuthService {
     public void resetPassword(PasswordResetRequest req) {
         User user = findValidResetUser(req.email(), req.token());
 
+        if (passwordEncoder.matches(req.newPassword(), user.getPassword())) {
+            throw new BadRequestException("A nova senha não pode ser igual à senha atual.");
+        }
+
         user.setPassword(passwordEncoder.encode(req.newPassword()));
         user.setResetToken(null);
         user.setResetTokenExpires(null);
