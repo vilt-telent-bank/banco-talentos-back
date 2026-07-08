@@ -64,4 +64,10 @@ public class User extends BaseAuditableEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id")
     private Group group;
+
+    @Column(name = "refresh_token", unique = true)
+    private String refreshToken;
+
+    @Column(name = "refresh_token_expires")
+    private Instant refreshTokenExpires;
 }
