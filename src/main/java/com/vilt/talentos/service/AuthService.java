@@ -69,13 +69,67 @@ public class AuthService {
                 "role", user.getRole().name()
         ));
 
+        String refreshToken = UUID.randomUUID().toString();
+
+        Instant refreshTokenExpiration = Instant.now().plus(7, ChronoUnit.DAYS);
+
+        user.setRefreshToken(refreshToken);
+        user.setRefreshTokenExpires(refreshTokenExpiration);
+        userRepo.save(user);
+
         return new AuthResponse(
                 token,
+                refreshToken,
                 user.getName(),
                 user.getEmail(),
                 user.getRole().name(),
                 profileRepo.existsByUserId(user.getId())
         );
+    }
+
+    public AuthResponse refreshToken(RefreshTokenRequest req) {
+        User user = userRepo.findByRefreshToken(req.refreshToken())
+                .orElseThrow(() -> new UnauthorizedException("Refresh token inválido ou não encontrado."));
+
+        if (user.getRefreshTokenExpires() == null || user.getRefreshTokenExpires().isBefore(Instant.now())) {
+            user.setRefreshToken(null);
+            user.setRefreshTokenExpires(null);
+            userRepo.save(user);
+            throw new UnauthorizedException("Sessão expirada. Por favor, faça login novamente.");
+        }
+
+        String newToken = jwtService.generate(user.getId().toString(), Map.of(
+                "name", user.getName(),
+                "email", user.getEmail(),
+                "role", user.getRole().name()
+        ));
+
+        String newRefreshToken = UUID.randomUUID().toString();
+        Instant newRefreshTokenExpiration = Instant.now().plus(7, ChronoUnit.DAYS);
+
+        user.setRefreshToken(newRefreshToken);
+        user.setRefreshTokenExpires(newRefreshTokenExpiration);
+        userRepo.save(user);
+
+        return new AuthResponse(
+                newToken,
+                newRefreshToken,
+                user.getName(),
+                user.getEmail(),
+                user.getRole().name(),
+                profileRepo.existsByUserId(user.getId())
+        );
+    }
+
+    public void logout(RefreshTokenRequest req) {
+        User user = userRepo.findByRefreshToken(req.refreshToken())
+                .orElseThrow(() -> new UnauthorizedException("Token inválido ou sessão já encerrada."));
+
+        user.setRefreshToken(null);
+        user.setRefreshTokenExpires(null);
+
+        userRepo.save(user);
+        log.info("Sessão encerrada com sucesso para o usuário: {}", user.getEmail());
     }
 
     public void register(RegisterRequest request){

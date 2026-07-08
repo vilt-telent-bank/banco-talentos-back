@@ -24,4 +24,6 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @Override
     @EntityGraph(attributePaths = {"group"})
     Page<User> findAll(Pageable pageable);
+
+    Optional<User> findByRefreshToken(String refreshToken);
 }
