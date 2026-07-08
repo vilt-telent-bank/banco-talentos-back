@@ -30,7 +30,7 @@ app:
   allowed-email-domain: ${ALLOWED_EMAIL_DOMAIN:vilt-group.com}
   jwt:
     secret: ${JWT_SECRET:super-secret-key-at-least-32-chars-long-for-hs256}
-    expiration-ms: 86400000
+    expiration-ms: 900000
 
 anthropic:
   api-key: ${ANTHROPIC_API_KEY:}
