@@ -10,6 +10,7 @@ import com.vilt.talentos.exception.UnauthorizedException;
 import com.vilt.talentos.mapper.JobPostingMapper;
 import com.vilt.talentos.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,6 +25,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class JobPostingService {
     private final JobPostingRepository jobPostingRepo;
     private final ProjectRepository projectRepo;
@@ -35,16 +37,21 @@ public class JobPostingService {
     public Page<JobPostingResponse> findAllActive(Pageable pageable){
         Page<JobPostingResponse> page = jobPostingRepo.findByActive(true, pageable)
                 .map(mapper::toResponse);
+
         if (page.isEmpty()) {
+            log.warn("Busca por vagas ativas retornou vazia.");
             throw new ResourceNotFoundException("Nenhuma vaga ativa encontrada");
         }
+
         return page;
     }
 
     public Page<JobPostingResponse> findAllInactive(Pageable pageable){
         Page<JobPostingResponse> page = jobPostingRepo.findByActive(false, pageable)
                 .map(mapper::toResponse);
+
         if (page.isEmpty()) {
+            log.warn("Busca por vagas inativas retornou vazia.");
             throw new ResourceNotFoundException("Nenhuma vaga inativa encontrada");
         }
         return page;
@@ -53,16 +60,27 @@ public class JobPostingService {
     public JobPostingResponse findById(UUID id){
         return jobPostingRepo.findById(id)
                 .map(mapper::toResponse)
-                .orElseThrow(() -> new ResourceNotFoundException("Vaga não encontrada"));
+                .orElseThrow(() -> {
+                    log.warn("Busca falhou: Vaga ID '{}' não encontrada.", id);
+                    return new ResourceNotFoundException("Vaga não encontrada");
+                });
     }
 
     @Transactional
     public JobPostingResponse create(JobPostingRequest request){
+        log.info("Iniciando criação de uma nova vaga para o projeto ID: {}", request.projectId());
+
         Project project = projectRepo.findById(request.projectId())
-                .orElseThrow(() -> new ResourceNotFoundException("Projeto não encontrado"));
+                .orElseThrow(() -> {
+                    log.warn("Falha ao criar vaga: Projeto ID '{}' não encontrado.", request.projectId());
+                    return new ResourceNotFoundException("Projeto não encontrado");
+                });
         
         Squad squad = squadRepo.findById(request.squadId())
-                .orElseThrow(() -> new ResourceNotFoundException("Squad não encontrada"));
+                .orElseThrow(() -> {
+                    log.warn("Falha ao criar vaga: Squad ID '{}' não encontrado.", request.squadId());
+                    return new ResourceNotFoundException("Squad não encontrada");
+                });
 
         JobPosting jobPosting = mapper.toEntity(request);
         jobPosting.setProject(project);
@@ -71,19 +89,33 @@ public class JobPostingService {
         
         reconcileSkills(jobPosting, request.skills());
 
-        return mapper.toResponse(jobPostingRepo.save(jobPosting));
+        JobPosting savedJobPosting = jobPostingRepo.save(jobPosting);
+        log.info("Vaga criada com sucesso. ID gerado: {}", savedJobPosting.getId());
+
+        return mapper.toResponse(savedJobPosting);
     }
 
     @Transactional
     public JobPostingResponse update(UUID id, JobPostingRequest request){
+        log.info("Iniciando atualização da vaga ID: {}", id);
+
         JobPosting jobPosting = jobPostingRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Vaga não encontrada"));
+                .orElseThrow(() -> {
+                    log.warn("Falha ao atualizar: Vaga ID '{}' não encontrada.", id);
+                    return new ResourceNotFoundException("Vaga não encontrada");
+                });
 
         Project project = projectRepo.findById(request.projectId())
-                .orElseThrow(() -> new ResourceNotFoundException("Projeto não encontrado"));
+                .orElseThrow(() -> {
+                    log.warn("Falha ao atualizar vaga: Projeto ID '{}' não encontrado.", request.projectId());
+                    return new ResourceNotFoundException("Projeto não encontrado");
+                });
         
         Squad squad = squadRepo.findById(request.squadId())
-                .orElseThrow(() -> new ResourceNotFoundException("Squad não encontrada"));
+                .orElseThrow(() -> {
+                    log.warn("Falha ao atualizar vaga: Squad ID '{}' não encontrado.", request.squadId());
+                    return new ResourceNotFoundException("Squad não encontrada");
+                });
 
         mapper.updateEntity(request, jobPosting);
         jobPosting.setProject(project);
@@ -92,12 +124,16 @@ public class JobPostingService {
 
         reconcileSkills(jobPosting, request.skills());
 
-        return mapper.toResponse(jobPostingRepo.save(jobPosting));
+        JobPosting updatedJobPosting = jobPostingRepo.save(jobPosting);
+        log.info("Vaga ID: {} atualizada com sucesso.", id);
+
+        return mapper.toResponse(updatedJobPosting);
     }
 
     private void reconcileSkills(JobPosting jobPosting, List<JobPostingSkillRequest> skillRequests) {
         if (skillRequests == null || skillRequests.isEmpty()) {
             jobPosting.getSkills().clear();
+            log.debug("Lista de skills da vaga enviada vazia. Removendo todas as skills da vaga.");
             return;
         }
 
@@ -107,6 +143,7 @@ public class JobPostingService {
                 .sum();
         
         if (totalWeight != 100) {
+            log.warn("Quebra de regra de negócio (RN004): A soma dos pesos das skills totalizou {}%, esperado 100%.", totalWeight);
             throw new BadRequestException("A soma dos pesos das skills deve totalizar 100%. Soma atual: " + totalWeight + "%");
         }
 
@@ -151,16 +188,28 @@ public class JobPostingService {
     }
 
     public void setActiveStatus(UUID id, boolean active){
+        log.info("Alterando status da vaga ID: {} para ativo={}", id, active);
+
         JobPosting jobPosting = jobPostingRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Vaga não encontrada"));
+                .orElseThrow(() -> {
+                    log.warn("Falha ao atualizar status da vaga: Vaga ID '{}' não encontrada.", id);
+                    return new ResourceNotFoundException("Vaga não encontrada");
+                });
+
         jobPosting.setActive(active);
         jobPosting.setUpdatedBy(getCurrentUser());
         jobPostingRepo.save(jobPosting);
+
+        log.info("Status da vaga ID: {} atualizado para: {}", id, active);
     }
 
     private User getCurrentUser() {
         String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
+
         return userRepo.findById(UUID.fromString(userIdStr))
-                .orElseThrow(() -> new UnauthorizedException("Usuário não autenticado"));
+                .orElseThrow(() -> {
+                    log.error("Inconsistência de segurança: Token válido, mas usuário ID: {} não encontrado no banco.", userIdStr);
+                    return new UnauthorizedException("Usuário não autenticado");
+                });
     }
 }
