@@ -10,6 +10,7 @@ import com.vilt.talentos.mapper.ProjectMapper;
 import com.vilt.talentos.repository.ProjectRepository;
 import com.vilt.talentos.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -19,6 +20,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProjectService {
 
     private final ProjectRepository projectRepo;
@@ -29,6 +31,7 @@ public class ProjectService {
         Page<ProjectResponse> page = projectRepo.findByActive(true, pageable)
                 .map(mapper::toResponse);
         if (page.isEmpty()) {
+            log.warn("Busca por projetos ativos retornou vazia.");
             throw new ResourceNotFoundException("Nenhum projeto ativo encontrado");
         }
         return page;
@@ -38,6 +41,7 @@ public class ProjectService {
         Page<ProjectResponse> page = projectRepo.findByActive(false, pageable)
                 .map(mapper::toResponse);
         if (page.isEmpty()) {
+            log.warn("Busca por projetos inativos retornou vazia.");
             throw new ResourceNotFoundException("Nenhum projeto inativo encontrado");
         }
         return page;
@@ -46,37 +50,64 @@ public class ProjectService {
     public ProjectResponse findById(UUID id) {
         return projectRepo.findById(id)
                 .map(mapper::toResponse)
-                .orElseThrow(() -> new ResourceNotFoundException("Projeto não encontrado"));
+                .orElseThrow(() -> {
+                    log.warn("Busca falhou: Projeto ID '{}' não encontrado.", id);
+                    return new ResourceNotFoundException("Projeto não encontrado");
+                });
     }
 
     public ProjectResponse create(ProjectRequest request) {
+        log.info("Iniciando criação de um novo projeto.");
+
         User currentUser = getCurrentUser();
         Project project = mapper.toEntity(request);
         project.setCreatedBy(currentUser);
-        return mapper.toResponse(projectRepo.save(project));
+
+        Project savedProject = projectRepo.save(project);
+        log.info("Projeto criado com sucesso. ID gerado: {}", savedProject.getId());
+
+        return mapper.toResponse(savedProject);
     }
 
     public ProjectResponse update(UUID id, ProjectRequest request) {
+        log.info("Iniciando atualização do projeto ID: {}", id);
+
         Project project = projectRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Projeto não encontrado"));
+                .orElseThrow(() -> {
+                    log.warn("Falha ao atualizar: Projeto ID '{}' não encontrado.", id);
+                    return new ResourceNotFoundException("Projeto não encontrado");
+                });
         
         mapper.updateEntity(request, project);
         project.setUpdatedBy(getCurrentUser());
-        
-        return mapper.toResponse(projectRepo.save(project));
+
+        Project updatedProject = projectRepo.save(project);
+        log.info("Projeto ID: {} atualizado com sucesso.", id);
+
+        return mapper.toResponse(updatedProject);
     }
 
     public void setActiveStatus(UUID id, boolean active) {
+        log.info("Alterando status do projeto ID: {} para ativo={}", id, active);
+
         Project project = projectRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Projeto não encontrado"));
+                .orElseThrow(() -> {
+                    log.warn("Falha ao definir status ativo: Projeto ID '{}' não encontrado.", id);
+                    return new ResourceNotFoundException("Projeto não encontrado");
+                });
+
         project.setActive(active);
         project.setUpdatedBy(getCurrentUser());
         projectRepo.save(project);
+        log.info("Status do projeto ID: {} atualizado com sucesso.", id);
     }
 
     private User getCurrentUser() {
         String userIdStr = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepo.findById(UUID.fromString(userIdStr))
-                .orElseThrow(() -> new UnauthorizedException("Usuário não autenticado"));
+                .orElseThrow(() -> {
+                    log.error("Falha de segurança: Token válido, mas usuário ID: {} não encontrado no banco de dados.", userIdStr);
+                    return new UnauthorizedException("Usuário não autenticado");
+                });
     }
 }

@@ -10,6 +10,7 @@ import com.vilt.talentos.exception.ResourceNotFoundException;
 import com.vilt.talentos.mapper.SkillMapper;
 import com.vilt.talentos.repository.SkillRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.data.domain.Page;
@@ -22,6 +23,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SkillService {
 
     private final SkillRepository skillRepo;
@@ -30,25 +32,34 @@ public class SkillService {
     public Page<SkillResponse> findAllActive(Pageable pageable) {
         Page<SkillResponse> page = skillRepo.findByActive(true, pageable)
                 .map(mapper::toResponse);
+
         if (page.isEmpty()) {
+            log.warn("Busca por skills ativas retornou vazia.");
             throw new ResourceNotFoundException("Nenhuma skill ativa encontrada.");
         }
+
         return page;
     }
 
     public Page<SkillResponse> findAllInactive(Pageable pageable) {
         Page<SkillResponse> page = skillRepo.findByActive(false, pageable)
                 .map(mapper::toResponse);
+
         if (page.isEmpty()) {
+            log.warn("Busca por skills inativas retornou vazia.");
             throw new ResourceNotFoundException("Nenhuma skill inativa encontrada.");
         }
+
         return page;
     }
 
     public SkillResponse findById(UUID id) {
         return skillRepo.findById(id)
                 .map(mapper::toResponse)
-                .orElseThrow(() -> new ResourceNotFoundException("Skill não encontrada"));
+                .orElseThrow(() -> {
+                    log.warn("Busca falhou: Skill ID '{}' não encontrada.", id);
+                    return new ResourceNotFoundException("Skill não encontrada");
+                });
     }
 
     @Transactional(readOnly = true)
@@ -98,33 +109,45 @@ public class SkillService {
     }
     public SkillResponse create(SkillRequest request) {
         String nameUpper = request.name().trim().toUpperCase();
+        log.info("Iniciando processo de criação/validação para a skill: '{}'", nameUpper);
 
         return skillRepo.findByName(nameUpper)
                 .map(existing -> {
                     if (!existing.isActive()) {
+                        log.info("A skill '{}' já existia, mas estava inativa. Reativando e atualizando dados (ID: {}).", nameUpper, existing.getId());
                         existing.setActive(true);
                         existing.setDescription(request.description());
                         existing.setCategory(request.category());
                         return mapper.toResponse(skillRepo.save(existing));
                     }
+                    log.info("A skill '{}' já existe e encontra-se ativa. Retornando registro existente sem alterações.", nameUpper);
                     return mapper.toResponse(existing);
                 })
                 .orElseGet(() -> {
                     Skill skill = mapper.toEntity(request);
                     skill.setName(nameUpper);
-                    return mapper.toResponse(skillRepo.save(skill));
+                    Skill savedSkill = skillRepo.save(skill);
+
+                    log.info("Nova skill '{}' criada com sucesso. ID gerado: {}", nameUpper, savedSkill.getId());
+                    return mapper.toResponse(savedSkill);
                 });
     }
 
     public SkillResponse update(UUID id, SkillRequest request) {
+        log.info("Iniciando atualização da skill ID: {}", id);
+
         Skill skill = skillRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Skill não encontrada"));
+                .orElseThrow(() -> {
+                    log.warn("Falha ao atualizar: Skill ID '{}' não encontrada.", id);
+                    return new ResourceNotFoundException("Skill não encontrada");
+                });
 
         String nameUpper = request.name().trim().toUpperCase();
 
         skillRepo.findByName(nameUpper)
                 .ifPresent(existing -> {
                     if (!existing.getId().equals(id)) {
+                        log.warn("Falha ao atualizar: Skill com nome '{}' já existe.", nameUpper);
                         throw new ConflictException("Já existe outra skill com este nome");
                     }
                 });
@@ -132,13 +155,24 @@ public class SkillService {
         mapper.updateEntity(request, skill);
         skill.setName(nameUpper);
 
-        return mapper.toResponse(skillRepo.save(skill));
+        Skill updatedSkill = skillRepo.save(skill);
+        log.info("Skill ID: {} atualizada com sucesso.", id);
+
+        return mapper.toResponse(updatedSkill);
     }
 
     public void setActiveStatus(UUID id, boolean active) {
+        log.info("Alterando status da skill ID: {} para ativo={}", id, active);
+
         Skill skill = skillRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Skill não encontrada"));
+                .orElseThrow(() -> {
+                    log.warn("Falha ao alterar status: Skill ID '{}' não encontrada.", id);
+                    return new ResourceNotFoundException("Skill não encontrada");
+                });
+
         skill.setActive(active);
         skillRepo.save(skill);
+
+        log.info("Status da skill ID: {} atualizado com sucesso.", id);
     }
 }
