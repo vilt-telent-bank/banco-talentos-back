@@ -3,6 +3,7 @@ package com.vilt.talentos.service;
 import com.vilt.talentos.config.AppProperties;
 import com.vilt.talentos.dto.AuthRequest;
 import com.vilt.talentos.dto.PasswordResetRequest;
+import com.vilt.talentos.dto.RefreshTokenRequest;
 import com.vilt.talentos.entity.DomainStatus;
 import com.vilt.talentos.entity.User;
 import com.vilt.talentos.exception.BadRequestException;
@@ -76,6 +77,10 @@ class AuthServiceTest {
 
         assertTrue(response.hasProfile());
         assertEquals("jwt-token", response.token());
+        assertTrue(response.refreshToken() != null && !response.refreshToken().isBlank());
+
+        verify(userRepo).save(any(User.class));
+        verify(userRepo).save(user);
     }
 
     @Test
@@ -97,8 +102,99 @@ class AuthServiceTest {
         when(jwtService.generate(eq(userId.toString()), anyMap())).thenReturn("jwt-token");
 
         var response = authService.login(new AuthRequest("test@vilt-group.com", "password123"));
+        assertTrue(response.refreshToken() != null && !response.refreshToken().isBlank());
 
+        verify(userRepo).save(any(User.class));
+        verify(userRepo).save(user);
         assertFalse(response.hasProfile());
+    }
+
+    @Test
+    void refreshToken_ValidToken_ReturnsNewTokens() {
+        String oldRefreshToken = "old-refresh-token";
+        UUID userId = UUID.randomUUID();
+        User user = User.builder()
+                .id(userId)
+                .email("test@vilt-group.com")
+                .name("Test User")
+                .refreshToken(oldRefreshToken)
+                .refreshTokenExpires(Instant.now().plus(7, ChronoUnit.DAYS))
+                .build();
+
+        RefreshTokenRequest req = new RefreshTokenRequest(oldRefreshToken);
+
+        when(userRepo.findByRefreshToken(oldRefreshToken)).thenReturn(Optional.of(user));
+        when(jwtService.generate(eq(userId.toString()), anyMap())).thenReturn("new-jwt-token");
+        when(profileRepo.existsByUserId(userId)).thenReturn(true);
+
+        var response = authService.refreshToken(req);
+
+        assertEquals("new-jwt-token", response.token());
+        assertTrue(response.refreshToken() != null && !response.refreshToken().isEmpty());
+        assertTrue(response.refreshToken() != null && !response.refreshToken().isBlank());
+
+        verify(userRepo).save(any(User.class));
+        verify(userRepo).save(user);
+    }
+
+    @Test
+    void refreshToken_ExpiredToken_ThrowsUnauthorizedAndClearsToken() {
+        String expiredToken = "expired-refresh-token";
+        User user = User.builder()
+                .email("test@vilt-group.com")
+                .refreshToken(expiredToken)
+                .refreshTokenExpires(Instant.now().minus(1, ChronoUnit.DAYS))
+                .build();
+
+        RefreshTokenRequest req = new RefreshTokenRequest(expiredToken);
+
+        when(userRepo.findByRefreshToken(expiredToken)).thenReturn(Optional.of(user));
+
+        assertThrows(com.vilt.talentos.exception.UnauthorizedException.class, () -> authService.refreshToken(req));
+
+        verify(userRepo).save(user);
+        assertTrue(user.getRefreshToken() == null);
+        assertTrue(user.getRefreshTokenExpires() == null);
+    }
+
+    @Test
+    void refreshToken_InvalidToken_ThrowsUnauthorized() {
+        String invalidToken = "invalid-token";
+        RefreshTokenRequest req = new RefreshTokenRequest(invalidToken);
+
+        when(userRepo.findByRefreshToken(invalidToken)).thenReturn(Optional.empty());
+
+        assertThrows(com.vilt.talentos.exception.UnauthorizedException.class, () -> authService.refreshToken(req));
+    }
+
+    @Test
+    void logout_ValidToken_ClearsUserTokens() {
+        String validToken = "valid-refresh-token";
+        User user = User.builder()
+                .email("test@vilt-group.com")
+                .refreshToken(validToken)
+                .refreshTokenExpires(Instant.now().plus(1, ChronoUnit.DAYS))
+                .build();
+
+        RefreshTokenRequest req = new RefreshTokenRequest(validToken);
+
+        when(userRepo.findByRefreshToken(validToken)).thenReturn(Optional.of(user));
+
+        authService.logout(req);
+
+        verify(userRepo).save(user);
+        assertTrue(user.getRefreshToken() == null);
+        assertTrue(user.getRefreshTokenExpires() == null);
+    }
+
+    @Test
+    void logout_InvalidToken_ThrowsUnauthorized() {
+        String invalidToken = "invalid-token";
+        RefreshTokenRequest req = new RefreshTokenRequest(invalidToken);
+
+        when(userRepo.findByRefreshToken(invalidToken)).thenReturn(Optional.empty());
+
+        assertThrows(com.vilt.talentos.exception.UnauthorizedException.class, () -> authService.logout(req));
     }
 
     @Test

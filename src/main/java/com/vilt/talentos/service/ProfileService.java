@@ -12,6 +12,7 @@ import com.vilt.talentos.repository.*;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ProfileService {
 
     private final ProfileRepository profileRepo;
@@ -38,8 +40,13 @@ public class ProfileService {
 
     @Transactional
     public Profile createOrUpdate(UUID userId, ProfileRequest req) {
+        log.info("Criando ou atualizando perfil para o usuário ID: {}", userId);
+
         var user = userRepo.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+                .orElseThrow(() -> {
+                    log.warn("Falha na submissão de perfil: Usuário ID: {} não encontrado.", userId);
+                    return new ResourceNotFoundException("Usuário não encontrado.");
+                });
 
         var evaluation = evaluationService.evaluate(req);
 
@@ -63,12 +70,14 @@ public class ProfileService {
         reconcileSkills(profile, req.skills(), null);
 
         Profile saved = profileRepo.save(profile);
+        log.info("Perfil salvo e alterado para PENDING. ID do Perfil: {}", saved.getId());
 
         // Notificar admins se o perfil foi submetido (se estava ATIVO ou se é novo)
         if (wasActive || profileRepo.findByUserId(userId).isEmpty()) {
             List<String> adminEmails = userRepo.findAllByRoleAndStatus(UserRole.ADMIN, DomainStatus.ACTIVE, Pageable.unpaged())
                     .getContent().stream().map(User::getEmail).toList();
             if (!adminEmails.isEmpty()) {
+                log.info("Notificando {} administrador(es) sobre o novo perfil pendente do usuário: {}", adminEmails.size(), user.getName());
                 emailService.sendAdminNewProfileSubmissionEmail(
                     adminEmails, user.getName(), saved.getJobTitle(), saved.getLevel(), appProperties.getUrl()
                 );
@@ -80,7 +89,10 @@ public class ProfileService {
 
     public Profile getByUserId(UUID userId) {
         Profile profile = profileRepo.findByUserId(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Perfil não encontrado para o usuário"));
+                .orElseThrow(() -> {
+                    log.warn("Busca falhou: Perfil não encontrado para o usuário ID: {}", userId);
+                    return new ResourceNotFoundException("Perfil não encontrado para o usuário");
+                });
         
         return sanitizeProfileForResource(profile);
     }
@@ -96,22 +108,31 @@ public class ProfileService {
 
     public Profile getById(UUID id) {
         return profileRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Perfil não encontrado"));
+                .orElseThrow(() -> {
+                    log.warn("Busca falhou: Perfil não encontrado para o ID: {}", id);
+                    return new ResourceNotFoundException("Perfil não encontrado para o ID: " + id);
+                });
     }
 
     public Page<Profile> getByStatus(DomainStatus status, Pageable pageable) {
         Page<Profile> page = profileRepo.findByStatus(status, pageable);
+
         if (page.isEmpty()) {
+            log.warn("Busca por perfis com status '{}' retornou vazia.", status);
             throw new ResourceNotFoundException("No profiles found with status: " + status);
         }
+
         return page;
     }
 
     public Page<Profile> getAll(Pageable pageable) {
         Page<Profile> page = profileRepo.findAll(pageable);
+
         if (page.isEmpty()) {
+            log.warn("Busca geral por perfis retornou vazia.");
             throw new ResourceNotFoundException("No profiles found");
         }
+
         return page;
     }
 
@@ -156,8 +177,13 @@ public class ProfileService {
 
     @Transactional
     public Profile adminUpdate(UUID profileId, AdminUpdateRequest req) {
+        log.info("Iniciando atualização administrativa para o perfil ID: {}", profileId);
+
         var profile = profileRepo.findById(profileId)
-                .orElseThrow(() -> new ResourceNotFoundException("Perfil não encontrado"));
+                .orElseThrow(() -> {
+                    log.warn("Falha na atualização do perfil: Perfil ID: {} não encontrado.", profileId);
+                    return new ResourceNotFoundException("Perfil não encontrado");
+                });
         
         DomainStatus oldStatus = profile.getStatus();
         
@@ -165,7 +191,7 @@ public class ProfileService {
             try {
                 profile.setStatus(DomainStatus.valueOf(req.status()));
             } catch (IllegalArgumentException e) {
-                // Keep old status or handle error
+                log.warn("Tentativa inválida de alterar perfil ID: {} para o status desconhecido: '{}'. Status ignorado.", profileId, req.status());
             }
         }
 
@@ -175,13 +201,16 @@ public class ProfileService {
             try {
                 profile.setRegistrationStatus(RegistrationStatus.valueOf(req.registrationStatus()));
             } catch (IllegalArgumentException e) {
-                // Ignore invalid enum
+                log.warn("Tentativa inválida de alterar perfil ID: {} para o status de registro desconhecido: '{}'. Status de registro ignorado.", profileId, req.registrationStatus());
             }
         }
 
         if (req.groupId() != null) {
             var group = groupRepo.findById(req.groupId())
-                    .orElseThrow(() -> new BadRequestException("Group not found"));
+                    .orElseThrow(() -> {
+                        log.warn("Tentativa de associar grupo ao perfil ID: {} falhou: Grupo não encontrado.", profileId);
+                        return new BadRequestException("Group not found");
+                    });
             profile.getUser().setGroup(group);
             userRepo.save(profile.getUser());
         }
@@ -192,10 +221,11 @@ public class ProfileService {
         }
 
         Profile saved = profileRepo.save(profile);
-
+        log.info("Perfil ID: {} atualizado administrativamente com sucesso.", profileId);
 
         // Se o status mudou para ATIVO, notifica o colaborador
         if (DomainStatus.ACTIVE == saved.getStatus() && DomainStatus.ACTIVE != oldStatus) {
+            log.info("Status do perfil ID: {} mudou para ACTIVE. Disparando notificação para o usuário.", profileId);
             emailService.sendResourceProfileApprovedEmail(
                 saved.getUser().getEmail(), saved.getUser().getName(), appProperties.getUrl()
             );

@@ -27,7 +27,7 @@ class AuthControllerTest extends BaseControllerTest {
     @Test
     void login_ValidRequest_ReturnsAuthResponse() throws Exception {
         AuthRequest req = new AuthRequest("test@vilt-group.com", "password123");
-        AuthResponse res = new AuthResponse("jwt-token", "Test User", "test@vilt-group.com", "RESOURCE", true);
+        AuthResponse res = new AuthResponse("jwt-token", "refresh-token","Test User", "test@vilt-group.com", "RESOURCE", true);
 
         when(authService.login(any(AuthRequest.class))).thenReturn(res);
 
@@ -36,8 +36,37 @@ class AuthControllerTest extends BaseControllerTest {
                         .content(asJsonString(req)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").value("jwt-token"))
+                .andExpect(jsonPath("$.refreshToken").value("refresh-token"))
                 .andExpect(jsonPath("$.name").value("Test User"))
                 .andExpect(jsonPath("$.hasProfile").value(true));
+    }
+
+    @Test
+    void refreshToken_ValidRequest_ReturnsAuthResponse() throws Exception {
+        RefreshTokenRequest req = new RefreshTokenRequest("valid-refresh-token");
+        AuthResponse res = new AuthResponse("new-jwt-token", "new-refresh-token", "Test User", "test@vilt-group.com", "RESOURCE", true);
+
+        when(authService.refreshToken(any(RefreshTokenRequest.class))).thenReturn(res);
+
+        mockMvc.perform(post("/api/v1/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(req)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").value("new-jwt-token"))
+                .andExpect(jsonPath("$.refreshToken").value("new-refresh-token"))
+                .andExpect(jsonPath("$.name").value("Test User"));
+    }
+
+    @Test
+    void logout_ValidRequest_ReturnsNoContent() throws Exception {
+        RefreshTokenRequest req = new RefreshTokenRequest("valid-refresh-token");
+
+        doNothing().when(authService).logout(any(RefreshTokenRequest.class));
+
+        mockMvc.perform(post("/api/v1/auth/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(asJsonString(req)))
+                .andExpect(status().isNoContent());
     }
 
     @Test
