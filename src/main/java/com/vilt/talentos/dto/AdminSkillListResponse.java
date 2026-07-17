@@ -15,5 +15,5 @@ public record AdminSkillListResponse(
     SkillCategory category,
     long resourcesCount,
     double averageProficiency,
-    List<String> avatarUrls
+    List<AvatarResponse> avatars
 ) {}

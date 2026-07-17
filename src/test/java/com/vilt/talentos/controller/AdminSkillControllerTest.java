@@ -1,8 +1,10 @@
 package com.vilt.talentos.controller;
 
 import com.vilt.talentos.dto.AdminSkillListResponse;
+import com.vilt.talentos.dto.AvatarResponse;
 import com.vilt.talentos.dto.SkillRequest;
 import com.vilt.talentos.dto.SkillResponse;
+import com.vilt.talentos.entity.AvatarType;
 import com.vilt.talentos.entity.SkillCategory;
 import com.vilt.talentos.entity.SkillType;
 import com.vilt.talentos.service.SkillService;
@@ -40,7 +42,7 @@ class AdminSkillControllerTest extends BaseControllerTest {
         AdminSkillListResponse response = new AdminSkillListResponse(
                 UUID.randomUUID(), "JAVA", SkillType.HARD, true,
                 "Linguagem de programação", SkillCategory.BACKEND,
-                10L, 7.5, List.of("https://example.com/avatar1.png")
+                10L, 7.5, List.of(new AvatarResponse(AvatarType.PHOTO, "https://example.com/avatar1.png"))
         );
         when(skillService.getAdminSkills(isNull(), isNull(), any(Pageable.class)))
                 .thenReturn(new PageImpl<>(List.of(response)));
