@@ -322,4 +322,23 @@ public class ProfileService {
             }
         }
     }
+
+    public String getInitials(String fullName) {
+        if (fullName == null || fullName.isBlank()) {
+            return "";
+        }
+
+        String[] nameParts = fullName.trim().split("\\s+");
+
+        if (nameParts.length == 1) {
+            return nameParts[0]
+                    .substring(0, 1)
+                    .toUpperCase();
+        }
+
+        return (
+                nameParts[0].substring(0, 1)
+                        + nameParts[nameParts.length - 1].substring(0, 1)
+        ).toUpperCase();
+    }
 }
