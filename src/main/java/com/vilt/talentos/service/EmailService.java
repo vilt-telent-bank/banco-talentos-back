@@ -24,10 +24,17 @@ public class EmailService {
 
     @Async
     public void sendTemplatedEmail(List<String> recipients, String subject, String templateName, Map<String, Object> variables) {
-        Context context = new Context();
-        context.setVariables(variables);
-        String htmlContent = templateEngine.process(templateName, context);
-        sendHtmlEmail(recipients, subject, htmlContent);
+        try {
+            log.info("Processando template HTML '{}' para os destinatários: {}", templateName, recipients);
+
+            Context context = new Context();
+            context.setVariables(variables);
+            String htmlContent = templateEngine.process(templateName, context);
+
+            sendHtmlEmail(recipients, subject, htmlContent);
+        } catch (Exception e) {
+            log.error("Erro ao processar o template '{}' para {}: {}", templateName, recipients, e.getMessage(), e);
+        }
     }
 
     @Async

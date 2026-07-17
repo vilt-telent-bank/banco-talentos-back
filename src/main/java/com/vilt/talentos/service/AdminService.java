@@ -12,6 +12,8 @@ import com.vilt.talentos.exception.ResourceNotFoundException;
 import com.vilt.talentos.repository.ProfileRepository;
 import com.vilt.talentos.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AdminService {
 
     private final ProfileRepository profileRepo;
@@ -34,6 +37,8 @@ public class AdminService {
     private final AppProperties appProperties;
 
     public DashboardKpisResponse getDashboardKpis() {
+        log.info("Calculando KPIs do dashboard geral.");
+
         var all = profileRepo.findAll();
         var total = all.size();
         var active = all.stream().filter(p -> DomainStatus.ACTIVE == p.getStatus()).count();
@@ -73,19 +78,29 @@ public class AdminService {
     }
 
     public List<User> getPendingUsers() {
-        org.springframework.data.domain.Page<User> users = userRepo.findAllByRoleAndStatus(UserRole.ADMIN, DomainStatus.PENDING, Pageable.unpaged());
+        log.info("Buscando lista de administradores pendentes de aprovação.");
+
+        Page<User> users = userRepo.findAllByRoleAndStatus(UserRole.ADMIN, DomainStatus.PENDING, Pageable.unpaged());
         if (users.isEmpty()) {
+            log.warn("Nenhum usuário pendente de aprovação encontrado.");
             throw new ResourceNotFoundException("Nenhum usuário pendente de aprovação");
         }
+
         return users.getContent();
     }
 
     @Transactional
     public void approveUser(UUID userId, UUID adminId) {
+        log.info("Iniciando processo de aprovação para o usuário ID: {} pelo admin ID: {}", userId, adminId);
+
         User user = userRepo.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+                .orElseThrow(() -> {
+                    log.error("Falha ao aprovar: Usuário ID: {} não encontrado no banco de dados.", userId);
+                    return new ResourceNotFoundException("Usuário não encontrado.");
+                });
 
         if (user.getStatus() != DomainStatus.PENDING) {
+            log.warn("Operação negada: Usuário ID: {} tem o status atual '{}', esperado era PENDING.", userId, user.getStatus());
             throw new BadRequestException("Usuário não está pendente de aprovação.");
         }
 
@@ -96,16 +111,24 @@ public class AdminService {
         user.setApprovedAt(Instant.now());
         
         userRepo.save(user);
+        log.info("Status do usuário ID: {} alterado para ACTIVE. Disparando e-mail de notificação.", userId);
 
         emailService.sendAdminApprovalConfirmedEmail(user.getEmail(), user.getName(), appProperties.getUrl());
+        log.info("Processo de aprovação do usuário ID: {} concluído com sucesso.", userId);
     }
 
     @Transactional
     public void rejectUser(UUID userId) {
+        log.info("Iniciando processo de rejeição para o usuário ID: {}", userId);
+
         User user = userRepo.findById(userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado."));
+                .orElseThrow(() -> {
+                    log.error("Falha ao rejeitar: Usuário ID: {} não encontrado.", userId);
+                    return new ResourceNotFoundException("Usuário não encontrado.");
+                });
 
         user.setStatus(DomainStatus.INACTIVE);
         userRepo.save(user);
+        log.info("Usuário ID: {} rejeitado com sucesso. Novo status: INACTIVE.", userId);
     }
 }
