@@ -30,7 +30,7 @@ public class Squad extends BaseAuditableEntity {
     private String projectManager;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id")
+    @JoinColumn(name = "project_id", nullable = true)
     private Project project;
 
     @Builder.Default

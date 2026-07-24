@@ -23,7 +23,6 @@ import java.util.UUID;
 public class SquadService {
 
     private final SquadRepository squadRepo;
-    private final ProjectRepository projectRepo;
     private final UserRepository userRepo;
     private final SquadMapper mapper;
 
@@ -51,6 +50,17 @@ public class SquadService {
         return page;
     }
 
+    public List<SquadResponse> findAllUnlinked() {
+        log.info("Buscando squads ativas sem vínculo com projeto.");
+        List<SquadResponse> result = squadRepo.findByActiveAndProjectIsNull(true)
+                .stream()
+                .map(mapper::toResponse)
+                .toList();
+
+        log.info("Total de squads sem vínculo encontradas: {}", result.size());
+        return result;
+    }
+
     public SquadResponse findById(UUID id) {
         return squadRepo.findById(id)
                 .map(mapper::toResponse)
@@ -64,18 +74,8 @@ public class SquadService {
         log.info("Iniciando criação de uma nova squad.");
 
         User currentUser = getCurrentUser();
-        Project project = null;
-
-        if (request.projectId() != null) {
-            project = projectRepo.findById(request.projectId())
-                    .orElseThrow(() -> {
-                        log.warn("Projeto ID '{}' não encontrado.", request.projectId());
-                        return new ResourceNotFoundException("Projeto não encontrado");
-                    });
-        }
 
         Squad squad = mapper.toEntity(request);
-        squad.setProject(project);
         squad.setActive(true);
         squad.setCreatedBy(currentUser);
 
@@ -93,18 +93,8 @@ public class SquadService {
                     log.warn("Falha ao atualizar: Squad ID '{}' não encontrada.", id);
                     return new ResourceNotFoundException("Squad não encontrada");
                 });
-        
-        Project project = null;
-        if (request.projectId() != null) {
-            project = projectRepo.findById(request.projectId())
-                    .orElseThrow(() -> {
-                        log.warn("Falha ao atualizar: Projeto ID '{}' não encontrado.", request.projectId());
-                        return new ResourceNotFoundException("Projeto não encontrado");
-                    });
-        }
 
         mapper.updateEntity(request, squad);
-        squad.setProject(project);
         squad.setUpdatedBy(getCurrentUser());
 
         Squad updatedSquad = squadRepo.save(squad);

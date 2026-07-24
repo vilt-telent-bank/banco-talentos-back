@@ -1,6 +1,7 @@
 package com.vilt.talentos.dto;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 public record ProjectResponse(
@@ -11,5 +12,6 @@ public record ProjectResponse(
     Instant createdAt,
     Instant updatedAt,
     String createdBy,
-    String updatedBy
+    String updatedBy,
+    List<SquadResponse> squads
 ) {}
