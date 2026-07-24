@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -24,4 +26,8 @@ public class Project extends BaseAuditableEntity {
     @Builder.Default
     @Column(nullable = false)
     private boolean active = true;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "project", fetch = FetchType.LAZY)
+    private List<Squad> squads = new ArrayList<>();
 }
