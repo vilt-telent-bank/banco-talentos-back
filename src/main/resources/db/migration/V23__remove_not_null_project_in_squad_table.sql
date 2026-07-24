@@ -1,0 +1,1 @@
+ALTER TABLE squads ALTER COLUMN project_id DROP NOT NULL;

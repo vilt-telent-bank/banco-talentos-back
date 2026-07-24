@@ -1,8 +1,11 @@
 package com.vilt.talentos.service;
 
 import com.vilt.talentos.dto.AdminSkillListResponse;
+import com.vilt.talentos.dto.AvatarResponse;
 import com.vilt.talentos.dto.SkillRequest;
 import com.vilt.talentos.dto.SkillResponse;
+import com.vilt.talentos.entity.AvatarType;
+import com.vilt.talentos.entity.Profile;
 import com.vilt.talentos.entity.Skill;
 import com.vilt.talentos.entity.SkillCategory;
 import com.vilt.talentos.exception.ConflictException;
@@ -28,6 +31,7 @@ public class SkillService {
 
     private final SkillRepository skillRepo;
     private final SkillMapper mapper;
+    private final ProfileService profileService;
 
     public Page<SkillResponse> findAllActive(Pageable pageable) {
         Page<SkillResponse> page = skillRepo.findByActive(true, pageable)
@@ -87,11 +91,20 @@ public class SkillService {
                     .average()
                     .orElse(0.0);
 
-            List<String> avatarUrls = skill.getProfileSkills().stream()
-                    .filter(ps -> ps.getProfile() != null && ps.getProfile().getPhotoUrl() != null)
+
+            List<AvatarResponse> avatars = skill.getProfileSkills().stream()
+                    .filter(ps -> ps.getProfile() != null)
                     .sorted((ps1, ps2) -> Double.compare(ps2.getProficiencyLevel(), ps1.getProficiencyLevel()))
                     .limit(5)
-                    .map(ps -> ps.getProfile().getPhotoUrl())
+                    .map(ps -> {
+                        Profile profile = ps.getProfile();
+                        AvatarType avatarType = profile.getPhotoUrl() != null ? AvatarType.PHOTO : AvatarType.INITIALS;
+                        String avatar = avatarType == AvatarType.PHOTO ? profile.getPhotoUrl() : profileService.getInitials(profile.getUser().getName());
+                        return new AvatarResponse(
+                                avatarType,
+                                avatar
+                        );
+                    })
                     .toList();
 
             return new AdminSkillListResponse(
@@ -103,7 +116,7 @@ public class SkillService {
                     skill.getCategory(),
                     resourcesCount,
                     avgProficiency,
-                    avatarUrls
+                    avatars
             );
         });
     }

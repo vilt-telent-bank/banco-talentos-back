@@ -71,8 +71,8 @@ class AdminSquadControllerTest extends BaseControllerTest {
     @WithMockUser(roles = "ADMIN")
     @DisplayName("Deve criar nova squad com sucesso")
     void create_Success() throws Exception {
-        SquadRequest request = new SquadRequest("Nova Squad", "Desc", "Coord", "GP", UUID.randomUUID());
-        SquadResponse response = new SquadResponse(UUID.randomUUID(), "Nova Squad", "Desc", "Coord", "GP", "Projeto", request.projectId(), true, Instant.now(), Instant.now(), "admin", "admin");
+        SquadRequest request = new SquadRequest("Nova Squad", "Desc", "Coord", "GP");
+        SquadResponse response = new SquadResponse(UUID.randomUUID(), "Nova Squad", "Desc", "Coord", "GP", "Projeto", null, true, Instant.now(), Instant.now(), "admin", "admin");
         
         when(squadService.create(any(SquadRequest.class))).thenReturn(response);
 
@@ -89,8 +89,8 @@ class AdminSquadControllerTest extends BaseControllerTest {
     @DisplayName("Deve atualizar squad com sucesso")
     void update_Success() throws Exception {
         UUID id = UUID.randomUUID();
-        SquadRequest request = new SquadRequest("Squad Atualizada", "Desc", "Coord", "GP", UUID.randomUUID());
-        SquadResponse response = new SquadResponse(id, "Squad Atualizada", "Desc", "Coord", "GP", "Projeto", request.projectId(), true, Instant.now(), Instant.now(), "admin", "admin");
+        SquadRequest request = new SquadRequest("Squad Atualizada", "Desc", "Coord", "GP");
+        SquadResponse response = new SquadResponse(id, "Squad Atualizada", "Desc", "Coord", "GP", "Projeto", null, true, Instant.now(), Instant.now(), "admin", "admin");
 
         when(squadService.update(eq(id), any(SquadRequest.class))).thenReturn(response);
 

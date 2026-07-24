@@ -137,16 +137,6 @@ public class JobPostingService {
             return;
         }
 
-        // RN004 - Validação de soma de pesos (100%)
-        int totalWeight = skillRequests.stream()
-                .mapToInt(JobPostingSkillRequest::importanceWeight)
-                .sum();
-        
-        if (totalWeight != 100) {
-            log.warn("Quebra de regra de negócio (RN004): A soma dos pesos das skills totalizou {}%, esperado 100%.", totalWeight);
-            throw new BadRequestException("A soma dos pesos das skills deve totalizar 100%. Soma atual: " + totalWeight + "%");
-        }
-
         Map<String, JobPostingSkillRequest> requested = skillRequests.stream()
                 .filter(s -> s.name() != null && !s.name().isBlank())
                 .collect(Collectors.toMap(

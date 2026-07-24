@@ -14,6 +14,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -24,6 +25,12 @@ import java.util.UUID;
 public class AdminSquadController {
 
     private final SquadService squadService;
+
+    @GetMapping("/unlinked")
+    @Operation(summary = "Listar squads ativas sem vínculo com projeto (Admin)")
+    public List<SquadResponse> listUnlinked() {
+        return squadService.findAllUnlinked();
+    }
 
     @GetMapping("/active")
     @Operation(summary = "Listar squads ativas (Admin)")
