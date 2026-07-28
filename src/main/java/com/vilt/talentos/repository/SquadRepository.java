@@ -16,6 +16,9 @@ public interface SquadRepository extends JpaRepository<Squad, UUID> {
     Page<Squad> findByActive(boolean active, Pageable pageable);
 
     @EntityGraph(attributePaths = {"project"})
+    Page<Squad> findByActiveAndNameContainingIgnoreCase(boolean active, String name, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"project"})
     List<Squad> findByActiveAndProjectIsNull(boolean active);
 
     @EntityGraph(attributePaths = {"project"})

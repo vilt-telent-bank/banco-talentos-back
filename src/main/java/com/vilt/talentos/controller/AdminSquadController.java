@@ -34,14 +34,18 @@ public class AdminSquadController {
 
     @GetMapping("/active")
     @Operation(summary = "Listar squads ativas (Admin)")
-    public Page<SquadResponse> listActive(@PageableDefault(size = 20) Pageable pageable) {
-        return squadService.findAllActive(pageable);
+    public Page<SquadResponse> listActive(
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return squadService.findAllActive(search, pageable);
     }
 
     @GetMapping("/inactive")
     @Operation(summary = "Listar squads inativas (Admin)")
-    public Page<SquadResponse> listInactive(@PageableDefault(size = 20) Pageable pageable) {
-        return squadService.findAllInactive(pageable);
+    public Page<SquadResponse> listInactive(
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return squadService.findAllInactive(search, pageable);
     }
 
     @GetMapping("/{id}")

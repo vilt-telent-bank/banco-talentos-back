@@ -35,7 +35,7 @@ class AdminSquadControllerTest extends BaseControllerTest {
     @DisplayName("Deve listar squads ativas com sucesso")
     void listActive_Success() throws Exception {
         SquadResponse response = new SquadResponse(UUID.randomUUID(), "Squad 1", "Desc", "Coord", "GP", "Projeto", UUID.randomUUID(), true, Instant.now(), Instant.now(), "admin", "admin");
-        when(squadService.findAllActive(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(response)));
+        when(squadService.findAllActive(any(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(response)));
 
         mockMvc.perform(get("/api/v1/admin/squads/active"))
                 .andExpect(status().isOk())
@@ -47,7 +47,7 @@ class AdminSquadControllerTest extends BaseControllerTest {
     @DisplayName("Deve listar squads inativas com sucesso")
     void listInactive_Success() throws Exception {
         SquadResponse response = new SquadResponse(UUID.randomUUID(), "Squad 2", "Desc", "Coord", "GP", "Projeto", UUID.randomUUID(), false, Instant.now(), Instant.now(), "admin", "admin");
-        when(squadService.findAllInactive(any(Pageable.class))).thenReturn(new PageImpl<>(List.of(response)));
+        when(squadService.findAllInactive(any(), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(response)));
 
         mockMvc.perform(get("/api/v1/admin/squads/inactive"))
                 .andExpect(status().isOk())
