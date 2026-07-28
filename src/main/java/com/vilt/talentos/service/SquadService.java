@@ -26,9 +26,15 @@ public class SquadService {
     private final UserRepository userRepo;
     private final SquadMapper mapper;
 
-    public Page<SquadResponse> findAllActive(Pageable pageable) {
-        Page<SquadResponse> page = squadRepo.findByActive(true, pageable)
-                .map(mapper::toResponse);
+    public Page<SquadResponse> findAllActive(String search, Pageable pageable) {
+        Page<Squad> squadPage;
+        if (search != null && !search.trim().isEmpty()) {
+            squadPage = squadRepo.findByActiveAndNameContainingIgnoreCase(true, search.trim(), pageable);
+        } else {
+            squadPage = squadRepo.findByActive(true, pageable);
+        }
+
+        Page<SquadResponse> page = squadPage.map(mapper::toResponse);
 
         if (page.isEmpty()) {
             log.warn("Busca por squads ativas retornou vazia.");
@@ -38,9 +44,15 @@ public class SquadService {
         return page;
     }
 
-    public Page<SquadResponse> findAllInactive(Pageable pageable) {
-        Page<SquadResponse> page = squadRepo.findByActive(false, pageable)
-                .map(mapper::toResponse);
+    public Page<SquadResponse> findAllInactive(String search, Pageable pageable) {
+        Page<Squad> squadPage;
+        if (search != null && !search.trim().isEmpty()) {
+            squadPage = squadRepo.findByActiveAndNameContainingIgnoreCase(false, search.trim(), pageable);
+        } else {
+            squadPage = squadRepo.findByActive(false, pageable);
+        }
+
+        Page<SquadResponse> page = squadPage.map(mapper::toResponse);
 
         if (page.isEmpty()) {
             log.warn("Busca por squads inativas retornou vazia.");
