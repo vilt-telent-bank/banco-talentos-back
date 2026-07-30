@@ -57,8 +57,8 @@ public class EmailService {
                 .retrieve()
                 .toBodilessEntity()
                 .doOnSuccess(response -> log.info("E-mail enviado com sucesso para: {}", recipients))
-                .doOnError(error -> log.error("Erro ao enviar e-mail para: {}. Erro: {}", recipients, error.getMessage()))
-                .subscribe();
+                .doOnError(error -> log.error("Erro ao enviar e-mail para: {}. Erro: {}", recipients, error.getMessage(), error))
+                .block();
     }
 
     @Async
@@ -88,5 +88,21 @@ public class EmailService {
             "portalUrl", portalUrl
         );
         sendTemplatedEmail(List.of(toEmail), "ÍRIS | Perfil Aprovado", "emails/resource-profile-approved", variables);
+    }
+
+    @Async
+    public void sendResourceWelcomeEmail(String toEmail, String userName, String userEmail, String provisionalPassword, String loginUrl) {
+        Map<String, Object> variables = Map.of(
+            "userName", userName,
+            "userEmail", userEmail,
+            "provisionalPassword", provisionalPassword,
+            "loginUrl", loginUrl
+        );
+        sendTemplatedEmail(
+            List.of(toEmail),
+            "ÍRIS | Suas credenciais de acesso",
+            "emails/resource-welcome",
+            variables
+        );
     }
 }

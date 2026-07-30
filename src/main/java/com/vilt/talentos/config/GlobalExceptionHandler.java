@@ -2,6 +2,8 @@ package com.vilt.talentos.config;
 
 import com.vilt.talentos.dto.ApiError;
 import com.vilt.talentos.exception.BusinessException;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
@@ -15,6 +17,7 @@ import java.time.Instant;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(BusinessException.class)
@@ -72,6 +75,24 @@ public class GlobalExceptionHandler {
             Instant.now()
         );
         return new ResponseEntity<>(error, ex.getStatusCode());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiError> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        log.error("Violação de integridade de dados", ex);
+
+        String message = "Não foi possível concluir a operação. Verifique se os dados informados já existem.";
+        String details = ex.getMostSpecificCause().getMessage();
+        if (details != null) {
+            if (details.contains("cpf") || details.contains("uk_profiles_cpf")) {
+                message = "CPF já cadastrado.";
+            } else if (details.contains("email") || details.contains("users_email")) {
+                message = "E-mail já em uso.";
+            }
+        }
+
+        ApiError error = new ApiError(HttpStatus.BAD_REQUEST.value(), message, Instant.now());
+        return ResponseEntity.badRequest().body(error);
     }
 
     @ExceptionHandler(Exception.class)

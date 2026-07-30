@@ -58,7 +58,11 @@ class ProfileServiceTest {
         UUID userId = UUID.randomUUID();
         User user = User.builder().id(userId).email("test@vilt-group.com").build();
         Profile profile = Profile.builder().user(user).status(DomainStatus.ACTIVE).build();
-        ProfileRequest req = new ProfileRequest(null, "Dev", "IT", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        ProfileRequest req = new ProfileRequest(
+                null, "Dev", "IT",
+                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null
+        );
 
         when(userRepo.findById(userId)).thenReturn(Optional.of(user));
         when(profileRepo.findByUserId(userId)).thenReturn(Optional.of(profile));
@@ -76,7 +80,12 @@ class ProfileServiceTest {
         UUID userId = UUID.randomUUID();
         User user = User.builder().id(userId).email("test@vilt-group.com").build();
         Profile profile = Profile.builder().user(user).status(DomainStatus.PENDING).build();
-        ProfileRequest req = new ProfileRequest(null, "Dev", "IT", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, "12345", null, null, null);
+        ProfileRequest req = new ProfileRequest(
+                null, "Dev", "IT",
+                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+                "12345", null,
+                null, null, null, null, null, null, null
+        );
 
         when(userRepo.findById(userId)).thenReturn(Optional.of(user));
         when(profileRepo.findByUserId(userId)).thenReturn(Optional.of(profile));
@@ -113,7 +122,9 @@ class ProfileServiceTest {
         ps.setProfile(profile);
 
         AdminUpdateRequest req = new AdminUpdateRequest(
-                "ACTIVE", "SENIOR", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+                "ACTIVE", "SENIOR",
+                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null,
                 java.util.List.of(new SkillEntry("TYPESCRIPT", 7)),
                 java.util.List.of(new SkillEntry("ADAPTABILIDADE E FLEXIBILIDADE", 10))
         );

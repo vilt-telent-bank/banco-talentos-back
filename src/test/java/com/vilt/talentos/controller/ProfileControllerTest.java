@@ -38,7 +38,13 @@ class ProfileControllerTest extends BaseControllerTest {
 
     @BeforeEach
     void setUp() {
-        profileResponse = new ProfileResponse(UUID.randomUUID(), "Test", "test@test.com", "Group", null, "Developer", null, null, null, null, null, null, null, null, null, null, DomainStatus.ACTIVE, List.of(), null, null);
+        profileResponse = new ProfileResponse(
+                UUID.randomUUID(), "Test", "test@test.com", "Group",
+                null, null, "Developer", null, null, null, null, null, null, null, null, null, null, null,
+                DomainStatus.ACTIVE,
+                null, null, null, null, null, null, null, null,
+                List.of(), null, null
+        );
     }
 
     @Test
@@ -59,9 +65,20 @@ class ProfileControllerTest extends BaseControllerTest {
     @WithMockUser(username = "123e4567-e89b-12d3-a456-426614174000")
     void submit_ValidRequest_ReturnsUpdatedProfile() throws Exception {
         UUID userId = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
-        ProfileRequest req = new ProfileRequest(null, "Senior Developer", "Engineering", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, Collections.emptyList());
+        ProfileRequest req = new ProfileRequest(
+                null, "Senior Developer", "Engineering",
+                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null,
+                Collections.emptyList()
+        );
         Profile profile = Profile.builder().id(profileResponse.id()).build();
-        ProfileResponse seniorResponse = new ProfileResponse(profile.getId(), "Test", "test@test.com", "Group", null, "Senior Developer", null, null, null, null, null, null, null, null, null, null, DomainStatus.ACTIVE, List.of(), null, null);
+        ProfileResponse seniorResponse = new ProfileResponse(
+                profile.getId(), "Test", "test@test.com", "Group",
+                null, null, "Senior Developer", null, null, null, null, null, null, null, null, null, null, null,
+                DomainStatus.ACTIVE,
+                null, null, null, null, null, null, null, null,
+                List.of(), null, null
+        );
 
         when(profileService.createOrUpdate(eq(userId), any(ProfileRequest.class))).thenReturn(profile);
         when(profileMapper.toResponse(profile)).thenReturn(seniorResponse);

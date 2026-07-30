@@ -1,6 +1,7 @@
 package com.vilt.talentos.controller;
 
 import com.vilt.talentos.dto.AdminUpdateRequest;
+import com.vilt.talentos.dto.CreateResourceResponse;
 import com.vilt.talentos.dto.DashboardKpisResponse;
 import com.vilt.talentos.dto.ProfileResponse;
 import com.vilt.talentos.entity.DomainStatus;
@@ -9,6 +10,7 @@ import com.vilt.talentos.entity.User;
 import com.vilt.talentos.mapper.ProfileMapper;
 import com.vilt.talentos.service.AdminService;
 import com.vilt.talentos.service.ProfileService;
+import com.vilt.talentos.service.ResourceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,6 +42,9 @@ class AdminControllerTest extends BaseControllerTest {
     private AdminService adminService;
 
     @MockBean
+    private ResourceService resourceService;
+
+    @MockBean
     private ProfileMapper profileMapper;
 
     private Profile profile;
@@ -49,7 +54,13 @@ class AdminControllerTest extends BaseControllerTest {
     void setUp() {
         UUID id = UUID.randomUUID();
         profile = Profile.builder().id(id).status(DomainStatus.ACTIVE).user(User.builder().name("Test").build()).build();
-        profileResponse = new ProfileResponse(id, "Test", "test@test.com", "Group", null, null, null, null, null, null, null, null, null, null, null, null, DomainStatus.ACTIVE, List.of(), null, null);
+        profileResponse = new ProfileResponse(
+                id, "Test", "test@test.com", "Group",
+                null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+                DomainStatus.ACTIVE,
+                null, null, null, null, null, null, null, null,
+                List.of(), null, null
+        );
     }
 
     @Test
@@ -82,7 +93,13 @@ class AdminControllerTest extends BaseControllerTest {
     @DisplayName("Deve listar perfis pendentes com sucesso")
     void pending_Success() throws Exception {
         profile.setStatus(DomainStatus.PENDING);
-        ProfileResponse pendingResponse = new ProfileResponse(profile.getId(), "Test", "test@test.com", "Group", null, null, null, null, null, null, null, null, null, null, null, null, DomainStatus.PENDING, List.of(), null, null);
+        ProfileResponse pendingResponse = new ProfileResponse(
+                profile.getId(), "Test", "test@test.com", "Group",
+                null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+                DomainStatus.PENDING,
+                null, null, null, null, null, null, null, null,
+                List.of(), null, null
+        );
         
         when(profileService.getByStatus(eq(DomainStatus.PENDING), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(profile)));
         when(profileMapper.toResponse(any(Profile.class))).thenReturn(pendingResponse);
@@ -110,7 +127,12 @@ class AdminControllerTest extends BaseControllerTest {
     @DisplayName("Deve atualizar perfil com sucesso")
     void update_Success() throws Exception {
         UUID id = profile.getId();
-        AdminUpdateRequest req = new AdminUpdateRequest("ACTIVE", "SENIOR", null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+        AdminUpdateRequest req = new AdminUpdateRequest(
+                "ACTIVE", "SENIOR",
+                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null,
+                null, null
+        );
         
         when(profileService.adminUpdate(eq(id), any(AdminUpdateRequest.class))).thenReturn(profile);
         when(profileMapper.toResponse(profile)).thenReturn(profileResponse);
@@ -171,6 +193,33 @@ class AdminControllerTest extends BaseControllerTest {
                 .andExpect(status().isOk());
 
         verify(adminService).rejectUser(id);
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN")
+    @DisplayName("Deve cadastrar recurso com sucesso")
+    void createResource_Success() throws Exception {
+        UUID profileId = UUID.randomUUID();
+        UUID userId = UUID.randomUUID();
+        CreateResourceResponse response = new CreateResourceResponse(profileId, userId, "João Silva", "joao@vilt-group.com");
+        when(resourceService.createByAdmin(any())).thenReturn(response);
+
+        mockMvc.perform(post("/api/v1/admin/recursos")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "João Silva",
+                                  "email": "joao@vilt-group.com",
+                                  "cpf": "12345678901",
+                                  "groupId": "%s"
+                                }
+                                """.formatted(UUID.randomUUID())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("João Silva"))
+                .andExpect(jsonPath("$.email").value("joao@vilt-group.com"));
+
+        verify(resourceService).createByAdmin(any());
     }
 
     @Test

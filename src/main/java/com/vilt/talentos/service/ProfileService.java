@@ -3,6 +3,7 @@ package com.vilt.talentos.service;
 import com.vilt.talentos.config.AppProperties;
 import com.vilt.talentos.dto.AdminUpdateRequest;
 import com.vilt.talentos.dto.ProfileRequest;
+import com.vilt.talentos.dto.ProfileSelfUpdateRequest;
 import com.vilt.talentos.dto.SkillEntry;
 import com.vilt.talentos.entity.*;
 import com.vilt.talentos.exception.BadRequestException;
@@ -58,7 +59,7 @@ public class ProfileService {
         profile.setStatus(DomainStatus.PENDING);
 
         profileMapper.updateEntity(req, profile);
-        
+
         // Lógica de Matrícula para o Recurso: envia para revisão administrativa
         profile.setRegistrationNumber(req.registrationNumber());
         profile.setRegistrationStatus(RegistrationStatus.AWAITING_APPROVAL);
@@ -85,6 +86,53 @@ public class ProfileService {
         }
 
         return saved;
+    }
+
+    @Transactional
+    public Profile updateMyProfile(UUID userId, ProfileSelfUpdateRequest req) {
+        log.info("Atualizando perfil do recurso autenticado. Usuário ID: {}", userId);
+
+        Profile profile = profileRepo.findByUserId(userId)
+                .orElseThrow(() -> {
+                    log.warn("Atualização falhou: Perfil não encontrado para o usuário ID: {}", userId);
+                    return new ResourceNotFoundException("Perfil não encontrado para o usuário");
+                });
+
+        if (req.photoUrl() != null) profile.setPhotoUrl(blankToNull(req.photoUrl()));
+        if (req.jobTitle() != null) profile.setJobTitle(blankToNull(req.jobTitle()));
+        if (req.area() != null) profile.setArea(blankToNull(req.area()));
+        if (req.about() != null) profile.setAbout(blankToNull(req.about()));
+        if (req.experienceYears() != null) profile.setExperienceYears(req.experienceYears());
+        if (req.linkedinUrl() != null) profile.setLinkedinUrl(blankToNull(req.linkedinUrl()));
+        if (req.githubUrl() != null) profile.setGithubUrl(blankToNull(req.githubUrl()));
+        if (req.registrationNumber() != null) profile.setRegistrationNumber(blankToNull(req.registrationNumber()));
+        if (req.contato() != null) profile.setContato(blankToNull(req.contato()));
+        if (req.contactEmail() != null) profile.setContactEmail(blankToNull(req.contactEmail()));
+        if (req.telefone() != null) profile.setTelefone(blankToNull(req.telefone()));
+        if (req.endereco() != null) profile.setEndereco(blankToNull(req.endereco()));
+        if (req.cep() != null) profile.setCep(normalizeCep(req.cep()));
+        if (req.cidadeUf() != null) profile.setCidadeUf(blankToNull(req.cidadeUf()));
+
+        if (req.skills() != null) {
+            reconcileSkills(profile, req.skills(), null);
+        }
+
+        Profile saved = profileRepo.save(profile);
+        log.info("Perfil ID: {} atualizado pelo recurso com sucesso.", saved.getId());
+        return sanitizeProfileForResource(saved);
+    }
+
+    private String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
+    }
+
+    private String normalizeCep(String cep) {
+        if (cep == null || cep.isBlank()) return null;
+        String digits = cep.replaceAll("\\D", "");
+        if (digits.length() == 8) {
+            return digits.substring(0, 5) + "-" + digits.substring(5);
+        }
+        return digits.isBlank() ? null : digits;
     }
 
     public Profile getByUserId(UUID userId) {

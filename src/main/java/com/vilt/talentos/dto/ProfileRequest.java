@@ -43,6 +43,13 @@ public record ProfileRequest(
     String registrationNumber,
     String registrationStatus,
 
+    String contato,
+    String contactEmail,
+    String telefone,
+    String endereco,
+    String cep,
+    String cidadeUf,
+
     List<SkillEntry> skills
 ) {
 }

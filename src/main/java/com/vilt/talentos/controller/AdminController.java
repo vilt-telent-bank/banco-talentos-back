@@ -1,6 +1,8 @@
 package com.vilt.talentos.controller;
 
 import com.vilt.talentos.dto.AdminUpdateRequest;
+import com.vilt.talentos.dto.CreateResourceRequest;
+import com.vilt.talentos.dto.CreateResourceResponse;
 import com.vilt.talentos.dto.DashboardKpisResponse;
 import com.vilt.talentos.dto.ProfileResponse;
 import com.vilt.talentos.entity.DomainStatus;
@@ -9,6 +11,7 @@ import com.vilt.talentos.entity.User;
 import com.vilt.talentos.mapper.ProfileMapper;
 import com.vilt.talentos.service.AdminService;
 import com.vilt.talentos.service.ProfileService;
+import com.vilt.talentos.service.ResourceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
@@ -34,6 +38,7 @@ public class AdminController {
 
     private final ProfileService profileService;
     private final AdminService adminService;
+    private final ResourceService resourceService;
     private final ProfileMapper profileMapper;
 
     @GetMapping("/profiles")
@@ -64,6 +69,13 @@ public class AdminController {
     @Operation(summary = "Atualizar perfil", description = "Permite alterar status, nivel_override, área, grupo e outras informações do colaborador.")
     public ProfileResponse update(@PathVariable UUID id, @RequestBody @Valid AdminUpdateRequest req) {
         return profileMapper.toResponse(profileService.adminUpdate(id, req));
+    }
+
+    @PostMapping("/recursos")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Cadastrar recurso", description = "Cria um usuário recurso com senha provisória e envia as credenciais por e-mail.")
+    public CreateResourceResponse createResource(@RequestBody @Valid CreateResourceRequest request) {
+        return resourceService.createByAdmin(request);
     }
 
     @GetMapping("/dashboard")

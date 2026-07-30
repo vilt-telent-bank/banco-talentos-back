@@ -22,6 +22,13 @@ public record AdminUpdateRequest(
     String codeReviewRole,
     String registrationNumber,
     String registrationStatus,
+    String contato,
+    String contactEmail,
+    String telefone,
+    String endereco,
+    String cep,
+    String cidadeUf,
+    Integer experienceYears,
     UUID groupId,
     List<SkillEntry> skills,
     List<SkillEntry> softSkills

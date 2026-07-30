@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', Arial, sans-serif; line-height: 1.6; color: #2c3848; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 20px auto; padding: 20px; border: 1px solid #eee; border-radius: 8px; }
+        .header { background-color: #2c3848; color: #ffffff; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; border-bottom: 4px solid #e81464; }
+        .content { padding: 30px 20px; background-color: #ffffff; }
+        .footer { font-size: 0.8em; color: #777; text-align: center; margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; }
+        .credentials { background: #f8f9fa; border-radius: 8px; padding: 16px 20px; margin: 20px 0; }
+        .credentials p { margin: 8px 0; }
+        .password { font-size: 18px; font-weight: 700; color: #e81464; letter-spacing: 1px; }
+        .actions { text-align: center; margin-top: 30px; }
+        .button {
+            display: inline-block;
+            padding: 14px 28px;
+            background-color: #e81464;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header"><h2>ÍRIS | BANCO DE TALENTOS</h2></div>
+        <div class="content">
+            <h3 style="color: #2c3848; font-weight: 700;">Bem-vindo(a) ao ÍRIS</h3>
+            <p>Olá, <strong><span th:text="${userName}">Usuário</span></strong>!</p>
+            <p>Seu cadastro como recurso no <strong>ÍRIS | Banco de Talentos</strong> foi realizado. Utilize as credenciais provisórias abaixo para acessar o sistema:</p>
+
+            <div class="credentials">
+                <p><strong>E-mail:</strong> <span th:text="${userEmail}">email@vilt-group.com</span></p>
+                <p><strong>Senha provisória:</strong> <span class="password" th:text="${provisionalPassword}">Senha@123</span></p>
+            </div>
+
+            <p>Por segurança, recomendamos alterar sua senha após o primeiro acesso.</p>
+
+            <div class="actions">
+                <a th:href="${loginUrl}" class="button">ACESSAR O SISTEMA</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>Este é um e-mail automático enviado pelo sistema <strong>ÍRIS | Banco de Talentos</strong>.</p>
+            <p>&copy; 2026 VILT Group</p>
+        </div>
+    </div>
+</body>
+</html>
