@@ -31,20 +31,21 @@ public class Profile extends BaseAuditableEntity {
     @Column(name = "job_title")
     private String jobTitle;
 
-    private String contato;
+    private String contact;
 
     @Column(name = "contact_email")
     private String contactEmail;
 
-    private String telefone;
+    private String phone;
 
     @Column(columnDefinition = "TEXT")
-    private String endereco;
+    private String address;
 
-    private String cep;
+    @Column(name = "postal_code")
+    private String postalCode;
 
-    @Column(name = "cidade_uf")
-    private String cidadeUf;
+    @Column(name = "city_state")
+    private String cityState;
 
     // Perfil Técnico
     private String area;

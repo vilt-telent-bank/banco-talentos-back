@@ -106,12 +106,12 @@ public class ProfileService {
         if (req.linkedinUrl() != null) profile.setLinkedinUrl(blankToNull(req.linkedinUrl()));
         if (req.githubUrl() != null) profile.setGithubUrl(blankToNull(req.githubUrl()));
         if (req.registrationNumber() != null) profile.setRegistrationNumber(blankToNull(req.registrationNumber()));
-        if (req.contato() != null) profile.setContato(blankToNull(req.contato()));
+        if (req.contact() != null) profile.setContact(blankToNull(req.contact()));
         if (req.contactEmail() != null) profile.setContactEmail(blankToNull(req.contactEmail()));
-        if (req.telefone() != null) profile.setTelefone(blankToNull(req.telefone()));
-        if (req.endereco() != null) profile.setEndereco(blankToNull(req.endereco()));
-        if (req.cep() != null) profile.setCep(normalizeCep(req.cep()));
-        if (req.cidadeUf() != null) profile.setCidadeUf(blankToNull(req.cidadeUf()));
+        if (req.phone() != null) profile.setPhone(blankToNull(req.phone()));
+        if (req.address() != null) profile.setAddress(blankToNull(req.address()));
+        if (req.postalCode() != null) profile.setPostalCode(normalizePostalCode(req.postalCode()));
+        if (req.cityState() != null) profile.setCityState(blankToNull(req.cityState()));
 
         if (req.skills() != null) {
             reconcileSkills(profile, req.skills(), null);
@@ -126,9 +126,9 @@ public class ProfileService {
         return value == null || value.isBlank() ? null : value.trim();
     }
 
-    private String normalizeCep(String cep) {
-        if (cep == null || cep.isBlank()) return null;
-        String digits = cep.replaceAll("\\D", "");
+    private String normalizePostalCode(String postalCode) {
+        if (postalCode == null || postalCode.isBlank()) return null;
+        String digits = postalCode.replaceAll("\\D", "");
         if (digits.length() == 8) {
             return digits.substring(0, 5) + "-" + digits.substring(5);
         }

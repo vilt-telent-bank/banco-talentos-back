@@ -12,12 +12,12 @@ public record ProfileSelfUpdateRequest(
         String linkedinUrl,
         String githubUrl,
         String registrationNumber,
-        String contato,
+        String contact,
         String contactEmail,
-        String telefone,
-        String endereco,
-        String cep,
-        String cidadeUf,
+        String phone,
+        String address,
+        String postalCode,
+        String cityState,
         List<SkillEntry> skills
 ) {
 }
