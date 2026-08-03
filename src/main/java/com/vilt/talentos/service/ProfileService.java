@@ -60,10 +60,7 @@ public class ProfileService {
 
         profileMapper.updateEntity(req, profile);
 
-        // Lógica de Matrícula para o Recurso: envia para revisão administrativa
-        profile.setRegistrationNumber(req.registrationNumber());
-        profile.setRegistrationStatus(RegistrationStatus.AWAITING_APPROVAL);
-
+        // Matrícula é preenchida apenas pelo admin
         profile.setLevel(evaluation.nivel().name());
         profile.setLevelScore(evaluation.score());
         profile.setLevelJustification(evaluation.justificativa());
@@ -105,7 +102,6 @@ public class ProfileService {
         if (req.experienceYears() != null) profile.setExperienceYears(req.experienceYears());
         if (req.linkedinUrl() != null) profile.setLinkedinUrl(blankToNull(req.linkedinUrl()));
         if (req.githubUrl() != null) profile.setGithubUrl(blankToNull(req.githubUrl()));
-        if (req.registrationNumber() != null) profile.setRegistrationNumber(blankToNull(req.registrationNumber()));
         if (req.contact() != null) profile.setContact(blankToNull(req.contact()));
         if (req.contactEmail() != null) profile.setContactEmail(blankToNull(req.contactEmail()));
         if (req.phone() != null) profile.setPhone(blankToNull(req.phone()));

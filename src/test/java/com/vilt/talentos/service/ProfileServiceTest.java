@@ -8,7 +8,6 @@ import com.vilt.talentos.entity.DomainStatus;
 import com.vilt.talentos.entity.ExperienceLevel;
 import com.vilt.talentos.entity.Profile;
 import com.vilt.talentos.entity.ProfileSkill;
-import com.vilt.talentos.entity.RegistrationStatus;
 import com.vilt.talentos.entity.Skill;
 import com.vilt.talentos.entity.SkillType;
 import com.vilt.talentos.entity.User;
@@ -60,8 +59,9 @@ class ProfileServiceTest {
         Profile profile = Profile.builder().user(user).status(DomainStatus.ACTIVE).build();
         ProfileRequest req = new ProfileRequest(
                 null, "Dev", "IT",
-                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null
+                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null,
+                null
         );
 
         when(userRepo.findById(userId)).thenReturn(Optional.of(user));
@@ -73,28 +73,6 @@ class ProfileServiceTest {
         Profile result = profileService.createOrUpdate(userId, req);
 
         assertEquals(DomainStatus.PENDING, result.getStatus(), "Profile status should be PENDING after update by resource");
-    }
-
-    @Test
-    void createOrUpdate_WhenRegistrationNumberProvided_ShouldBeAwaitingApproval() {
-        UUID userId = UUID.randomUUID();
-        User user = User.builder().id(userId).email("test@vilt-group.com").build();
-        Profile profile = Profile.builder().user(user).status(DomainStatus.PENDING).build();
-        ProfileRequest req = new ProfileRequest(
-                null, "Dev", "IT",
-                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-                "12345", null,
-                null, null, null, null, null, null, null
-        );
-
-        when(userRepo.findById(userId)).thenReturn(Optional.of(user));
-        when(profileRepo.findByUserId(userId)).thenReturn(Optional.of(profile));
-        when(evaluationService.evaluate(any())).thenReturn(new TalentEvaluationService.Evaluation(ExperienceLevel.PLENO, 50, "Justification"));
-        when(profileRepo.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-
-        Profile result = profileService.createOrUpdate(userId, req);
-
-        assertEquals(RegistrationStatus.AWAITING_APPROVAL, result.getRegistrationStatus(), "Registration status should be AWAITING_APPROVAL");
     }
 
     @Test
@@ -124,7 +102,8 @@ class ProfileServiceTest {
         AdminUpdateRequest req = new AdminUpdateRequest(
                 "ACTIVE", "SENIOR",
                 null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null,
+                null, null,
                 java.util.List.of(new SkillEntry("TYPESCRIPT", 7)),
                 java.util.List.of(new SkillEntry("ADAPTABILIDADE E FLEXIBILIDADE", 10))
         );

@@ -11,7 +11,6 @@ public record ProfileSelfUpdateRequest(
         Integer experienceYears,
         String linkedinUrl,
         String githubUrl,
-        String registrationNumber,
         String contact,
         String contactEmail,
         String phone,

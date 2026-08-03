@@ -67,7 +67,7 @@ class ProfileControllerTest extends BaseControllerTest {
         UUID userId = UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
         ProfileRequest req = new ProfileRequest(
                 null, "Senior Developer", "Engineering",
-                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
                 null, null, null, null, null, null,
                 Collections.emptyList()
         );

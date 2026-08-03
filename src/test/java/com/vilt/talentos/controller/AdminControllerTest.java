@@ -130,7 +130,8 @@ class AdminControllerTest extends BaseControllerTest {
         AdminUpdateRequest req = new AdminUpdateRequest(
                 "ACTIVE", "SENIOR",
                 null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null,
+                null, null,
                 null, null
         );
         
