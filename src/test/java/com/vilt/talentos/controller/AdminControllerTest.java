@@ -205,7 +205,7 @@ class AdminControllerTest extends BaseControllerTest {
         CreateResourceResponse response = new CreateResourceResponse(profileId, userId, "João Silva", "joao@vilt-group.com");
         when(resourceService.createByAdmin(any())).thenReturn(response);
 
-        mockMvc.perform(post("/api/v1/admin/recursos")
+        mockMvc.perform(post("/api/v1/admin/resources")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""

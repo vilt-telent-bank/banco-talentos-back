@@ -71,7 +71,7 @@ public class AdminController {
         return profileMapper.toResponse(profileService.adminUpdate(id, req));
     }
 
-    @PostMapping("/recursos")
+    @PostMapping("/resoucr")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Cadastrar recurso", description = "Cria um usuário recurso com senha provisória e envia as credenciais por e-mail.")
     public CreateResourceResponse createResource(@RequestBody @Valid CreateResourceRequest request) {
