@@ -153,6 +153,11 @@ public class AuthService {
         String email = normalizeAndValidateEmail(request.email());
         log.info("Iniciando processo de registro para o e-mail: {}", email);
 
+        if (request.role() == UserRole.RESOURCE) {
+            log.warn("Falha no registro: tentativa de auto-cadastro como RESOURCE para '{}'.", email);
+            throw new BadRequestException("Recursos devem ser cadastrados por um administrador.");
+        }
+
         if (userRepo.findByEmailIgnoreCase(email).isPresent()) {
             log.warn("Falha no registro: O e-mail '{}' já está em uso.", email);
             throw new BadRequestException("E-mail já em uso.");

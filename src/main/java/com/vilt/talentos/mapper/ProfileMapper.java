@@ -32,6 +32,7 @@ public interface ProfileMapper {
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
     @Mapping(target = "levelOverride", ignore = true)
+    @Mapping(target = "registrationNumber", ignore = true)
     @Mapping(target = "registrationStatus", ignore = true)
     Profile toEntity(ProfileRequest request);
 
@@ -48,6 +49,7 @@ public interface ProfileMapper {
     @Mapping(target = "createdBy", ignore = true)
     @Mapping(target = "updatedBy", ignore = true)
     @Mapping(target = "levelOverride", ignore = true)
+    @Mapping(target = "registrationNumber", ignore = true)
     @Mapping(target = "registrationStatus", ignore = true)
     void updateEntity(ProfileRequest request, @MappingTarget Profile entity);
 

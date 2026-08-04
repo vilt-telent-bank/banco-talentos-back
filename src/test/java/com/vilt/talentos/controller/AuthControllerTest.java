@@ -71,7 +71,7 @@ class AuthControllerTest extends BaseControllerTest {
 
     @Test
     void register_ValidRequest_ReturnsSuccessMessage() throws Exception {
-        RegisterRequest req = new RegisterRequest("Test User", "test@vilt-group.com", "Password123!", UserRole.RESOURCE, UUID.randomUUID());
+        RegisterRequest req = new RegisterRequest("Test User", "test@vilt-group.com", "Password123!", UserRole.ADMIN, UUID.randomUUID());
 
         doNothing().when(authService).register(any(RegisterRequest.class));
 
@@ -84,7 +84,7 @@ class AuthControllerTest extends BaseControllerTest {
 
     @Test
     void register_WeakPassword_ReturnsBadRequest() throws Exception {
-        RegisterRequest req = new RegisterRequest("Test User", "test@vilt-group.com", "weak", UserRole.RESOURCE, UUID.randomUUID());
+        RegisterRequest req = new RegisterRequest("Test User", "test@vilt-group.com", "weak", UserRole.ADMIN, UUID.randomUUID());
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -94,7 +94,7 @@ class AuthControllerTest extends BaseControllerTest {
 
     @Test
     void register_MissingSpecialChar_ReturnsBadRequest() throws Exception {
-        RegisterRequest req = new RegisterRequest("Test User", "test@vilt-group.com", "Password123", UserRole.RESOURCE, UUID.randomUUID());
+        RegisterRequest req = new RegisterRequest("Test User", "test@vilt-group.com", "Password123", UserRole.ADMIN, UUID.randomUUID());
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)

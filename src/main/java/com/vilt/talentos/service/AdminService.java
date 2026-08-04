@@ -82,8 +82,8 @@ public class AdminService {
 
         Page<User> users = userRepo.findAllByRoleAndStatus(UserRole.ADMIN, DomainStatus.PENDING, Pageable.unpaged());
         if (users.isEmpty()) {
-            log.warn("Nenhum usuário pendente de aprovação encontrado.");
-            throw new ResourceNotFoundException("Nenhum usuário pendente de aprovação");
+            log.info("Nenhum usuário pendente de aprovação encontrado.");
+            return List.of();
         }
 
         return users.getContent();

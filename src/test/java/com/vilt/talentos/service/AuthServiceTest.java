@@ -4,8 +4,10 @@ import com.vilt.talentos.config.AppProperties;
 import com.vilt.talentos.dto.AuthRequest;
 import com.vilt.talentos.dto.PasswordResetRequest;
 import com.vilt.talentos.dto.RefreshTokenRequest;
+import com.vilt.talentos.dto.RegisterRequest;
 import com.vilt.talentos.entity.DomainStatus;
 import com.vilt.talentos.entity.User;
+import com.vilt.talentos.entity.UserRole;
 import com.vilt.talentos.exception.BadRequestException;
 import com.vilt.talentos.mapper.UserMapper;
 import com.vilt.talentos.repository.GroupRepository;
@@ -54,6 +56,23 @@ class AuthServiceTest {
 
     @InjectMocks
     private AuthService authService;
+
+    @Test
+    void register_ResourceRole_ThrowsBadRequestException() {
+        when(appProperties.getAllowedEmailDomain()).thenReturn("vilt-group.com");
+
+        RegisterRequest request = new RegisterRequest(
+                "Test User",
+                "test@vilt-group.com",
+                "Password123!",
+                UserRole.RESOURCE,
+                UUID.randomUUID()
+        );
+
+        BadRequestException ex = assertThrows(BadRequestException.class, () -> authService.register(request));
+        assertEquals("Recursos devem ser cadastrados por um administrador.", ex.getMessage());
+        verify(userRepo, never()).save(any(User.class));
+    }
 
     @Test
     void login_UserWithProfile_ReturnsHasProfileTrue() {

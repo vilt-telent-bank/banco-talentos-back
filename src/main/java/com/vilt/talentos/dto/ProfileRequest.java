@@ -40,8 +40,12 @@ public record ProfileRequest(
     String linkedinUrl,
     String githubUrl,
 
-    String registrationNumber,
-    String registrationStatus,
+    String contact,
+    String contactEmail,
+    String phone,
+    String address,
+    String postalCode,
+    String cityState,
 
     List<SkillEntry> skills
 ) {
