@@ -1,1 +1,4 @@
+ALTER TABLE profiles
+    ADD COLUMN IF NOT EXISTS cpf VARCHAR(14);
+
 CREATE UNIQUE INDEX IF NOT EXISTS uk_profiles_cpf ON profiles (cpf) WHERE cpf IS NOT NULL;
