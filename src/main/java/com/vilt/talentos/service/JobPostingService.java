@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class JobPostingService {
+    private final AuditLogService auditLogService;
     private final JobPostingRepository jobPostingRepo;
     private final ProjectRepository projectRepo;
     private final SquadRepository squadRepo;
@@ -105,6 +106,8 @@ public class JobPostingService {
                     return new ResourceNotFoundException("Vaga não encontrada");
                 });
 
+        JobPostingResponse oldValue = mapper.toResponse(jobPosting);
+
         Project project = projectRepo.findById(request.projectId())
                 .orElseThrow(() -> {
                     log.warn("Falha ao atualizar vaga: Projeto ID '{}' não encontrado.", request.projectId());
@@ -127,7 +130,17 @@ public class JobPostingService {
         JobPosting updatedJobPosting = jobPostingRepo.save(jobPosting);
         log.info("Vaga ID: {} atualizada com sucesso.", id);
 
-        return mapper.toResponse(updatedJobPosting);
+        JobPostingResponse newValue = mapper.toResponse(updatedJobPosting);
+
+        auditLogService.record(
+                AuditOperation.UPDATE,
+                "JOB_POSTING",
+                updatedJobPosting.getId(),
+                oldValue,
+                newValue
+        );
+
+        return newValue;
     }
 
     private void reconcileSkills(JobPosting jobPosting, List<JobPostingSkillRequest> skillRequests) {
@@ -186,9 +199,24 @@ public class JobPostingService {
                     return new ResourceNotFoundException("Vaga não encontrada");
                 });
 
+        Boolean oldActive = jobPosting.getActive();
+
+        if (Boolean.valueOf(active).equals(oldActive)) {
+            log.info("Vaga ID: {} já possui ativo={}. Nenhuma alteração realizada.", id, active);
+            return;
+        }
+
         jobPosting.setActive(active);
         jobPosting.setUpdatedBy(getCurrentUser());
-        jobPostingRepo.save(jobPosting);
+        JobPosting updatedJobPosting = jobPostingRepo.save(jobPosting);
+
+        auditLogService.record(
+                AuditOperation.UPDATE,
+                "JOB_POSTING",
+                updatedJobPosting.getId(),
+                Map.of("active", oldActive),
+                Map.of("active", updatedJobPosting.getActive())
+        );
 
         log.info("Status da vaga ID: {} atualizado para: {}", id, active);
     }

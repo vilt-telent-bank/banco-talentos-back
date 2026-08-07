@@ -2,7 +2,7 @@ package com.vilt.talentos.controller;
 
 import com.vilt.talentos.dto.ProfileRequest;
 import com.vilt.talentos.dto.ProfileResponse;
-import com.vilt.talentos.entity.Profile;
+import com.vilt.talentos.dto.ProfileSelfUpdateRequest;
 import com.vilt.talentos.mapper.ProfileMapper;
 import com.vilt.talentos.service.ProfileService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -35,5 +35,11 @@ public class ProfileController {
     @Operation(summary = "Criar ou atualizar perfil", description = "Submete o perfil para análise (status PENDENTE). A IA avalia e classifica o nível automaticamente com base na Matriz Porto Seguro.")
     public ProfileResponse submit(@RequestBody @Valid ProfileRequest req, Authentication auth) {
         return profileMapper.toResponse(profileService.createOrUpdate(UUID.fromString(auth.getName()), req));
+    }
+
+    @PatchMapping
+    @Operation(summary = "Atualizar meu perfil", description = "Atualiza identificação, skills, contato/endereço e links sem alterar o status do perfil.")
+    public ProfileResponse updateMyProfile(@RequestBody @Valid ProfileSelfUpdateRequest req, Authentication auth) {
+        return profileMapper.toResponse(profileService.updateMyProfile(UUID.fromString(auth.getName()), req));
     }
 }

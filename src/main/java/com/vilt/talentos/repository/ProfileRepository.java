@@ -18,6 +18,8 @@ public interface ProfileRepository extends JpaRepository<Profile, UUID>, JpaSpec
 
     boolean existsByUserId(UUID userId);
 
+    boolean existsByCpf(String cpf);
+
     @EntityGraph(attributePaths = {"user", "skills", "skills.skill"})
     Page<Profile> findByStatus(DomainStatus status, Pageable pageable);
 

@@ -26,8 +26,26 @@ public class Profile extends BaseAuditableEntity {
     @Column(name = "photo_url")
     private String photoUrl;
 
+    private String cpf;
+
     @Column(name = "job_title")
     private String jobTitle;
+
+    private String contact;
+
+    @Column(name = "contact_email")
+    private String contactEmail;
+
+    private String phone;
+
+    @Column(columnDefinition = "TEXT")
+    private String address;
+
+    @Column(name = "postal_code")
+    private String postalCode;
+
+    @Column(name = "city_state")
+    private String cityState;
 
     // Perfil Técnico
     private String area;
