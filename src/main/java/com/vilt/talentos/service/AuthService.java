@@ -70,11 +70,7 @@ public class AuthService {
             throw new UnauthorizedException("Credenciais inválidas.");
         }
 
-        String token = jwtService.generate(user.getId().toString(), Map.of(
-                "name", user.getName(),
-                "email", user.getEmail(),
-                "role", user.getRole().name()
-        ));
+        String token = jwtService.generate(user.getId().toString(), accessTokenClaims(user));
 
         String refreshToken = UUID.randomUUID().toString();
 
@@ -110,11 +106,7 @@ public class AuthService {
             throw new UnauthorizedException("Sessão expirada. Por favor, faça login novamente.");
         }
 
-        String newToken = jwtService.generate(user.getId().toString(), Map.of(
-                "name", user.getName(),
-                "email", user.getEmail(),
-                "role", user.getRole().name()
-        ));
+        String newToken = jwtService.generate(user.getId().toString(), accessTokenClaims(user));
 
         String newRefreshToken = UUID.randomUUID().toString();
         Instant newRefreshTokenExpiration = Instant.now().plus(7, ChronoUnit.DAYS);
@@ -299,9 +291,28 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(req.newPassword()));
         user.setResetToken(null);
         user.setResetTokenExpires(null);
+        invalidateAllSessions(user);
         userRepo.save(user);
 
         log.info("Senha redefinida com sucesso para o usuário: {}", req.email());
+    }
+
+    private void invalidateAllSessions(User user) {
+        user.setRefreshToken(null);
+        user.setRefreshTokenExpires(null);
+        int currentVersion = user.getTokenVersion() != null ? user.getTokenVersion() : 0;
+        user.setTokenVersion(currentVersion + 1);
+        log.info("Sessões invalidadas para o usuário '{}' (tokenVersion={}).", user.getEmail(), user.getTokenVersion());
+    }
+
+    private Map<String, Object> accessTokenClaims(User user) {
+        int tokenVersion = user.getTokenVersion() != null ? user.getTokenVersion() : 0;
+        return Map.of(
+                "name", user.getName(),
+                "email", user.getEmail(),
+                "role", user.getRole().name(),
+                "tokenVersion", tokenVersion
+        );
     }
 
     private User findValidResetUser(String rawEmail, String token) {
