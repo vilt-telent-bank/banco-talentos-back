@@ -28,6 +28,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -222,14 +223,19 @@ class AuthServiceTest {
         String email = "test@vilt-group.com";
         User user = User.builder()
                 .email(email)
+                .password("old-encoded-password")
                 .resetToken(token)
                 .resetTokenExpires(Instant.now().plus(1, ChronoUnit.HOURS))
+                .refreshToken("active-refresh-token")
+                .refreshTokenExpires(Instant.now().plus(7, ChronoUnit.DAYS))
+                .tokenVersion(0)
                 .build();
 
         PasswordResetRequest req = new PasswordResetRequest(email, token, "new-password");
 
         when(userRepo.findByResetToken(token)).thenReturn(Optional.of(user));
         when(appProperties.getAllowedEmailDomain()).thenReturn("vilt-group.com");
+        when(passwordEncoder.matches("new-password", "old-encoded-password")).thenReturn(false);
         when(passwordEncoder.encode("new-password")).thenReturn("encoded-password");
 
         authService.resetPassword(req);
@@ -237,6 +243,39 @@ class AuthServiceTest {
         verify(passwordEncoder).encode("new-password");
         verify(userRepo).save(user);
         assertEquals("encoded-password", user.getPassword());
+        assertNull(user.getRefreshToken());
+        assertNull(user.getRefreshTokenExpires());
+        assertEquals(1, user.getTokenVersion());
+    }
+
+    @Test
+    void resetPassword_InvalidatesActiveSessions() {
+        String token = "valid-token";
+        String email = "test@vilt-group.com";
+        User user = User.builder()
+                .email(email)
+                .password("old-encoded-password")
+                .resetToken(token)
+                .resetTokenExpires(Instant.now().plus(1, ChronoUnit.HOURS))
+                .refreshToken("browser-a-refresh-token")
+                .refreshTokenExpires(Instant.now().plus(7, ChronoUnit.DAYS))
+                .tokenVersion(2)
+                .build();
+
+        PasswordResetRequest req = new PasswordResetRequest(email, token, "new-password");
+
+        when(userRepo.findByResetToken(token)).thenReturn(Optional.of(user));
+        when(appProperties.getAllowedEmailDomain()).thenReturn("vilt-group.com");
+        when(passwordEncoder.matches("new-password", "old-encoded-password")).thenReturn(false);
+        when(passwordEncoder.encode("new-password")).thenReturn("encoded-password");
+
+        authService.resetPassword(req);
+
+        assertNull(user.getRefreshToken());
+        assertNull(user.getRefreshTokenExpires());
+        assertEquals(3, user.getTokenVersion());
+        assertNull(user.getResetToken());
+        assertNull(user.getResetTokenExpires());
     }
 
     @Test

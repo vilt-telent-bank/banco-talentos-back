@@ -70,4 +70,8 @@ public class User extends BaseAuditableEntity {
 
     @Column(name = "refresh_token_expires")
     private Instant refreshTokenExpires;
+
+    @Builder.Default
+    @Column(name = "token_version", nullable = false)
+    private Integer tokenVersion = 0;
 }
