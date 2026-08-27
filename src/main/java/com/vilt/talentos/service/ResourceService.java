@@ -75,8 +75,9 @@ public class ResourceService {
         Profile profile = Profile.builder()
                 .user(user)
                 .cpf(cpf)
-                .status(DomainStatus.ACTIVE)
-                .registrationStatus(RegistrationStatus.NOT_REQUESTED)
+                .status(DomainStatus.PENDING)
+                .registrationStatus(RegistrationStatus.NOT_REQUIRED)
+                .resourceStatus(ResourceStatus.AVAILABLE)
                 .build();
         profileRepo.save(profile);
 

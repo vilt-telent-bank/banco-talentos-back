@@ -1,15 +1,18 @@
 package com.vilt.talentos.controller;
 
 import com.vilt.talentos.dto.AdminUpdateRequest;
+import com.vilt.talentos.dto.AdminUpdateRequestFixtures;
 import com.vilt.talentos.dto.CreateResourceResponse;
 import com.vilt.talentos.dto.DashboardKpisResponse;
 import com.vilt.talentos.dto.ProfileResponse;
+import com.vilt.talentos.dto.ProfileResponseFixtures;
 import com.vilt.talentos.entity.DomainStatus;
 import com.vilt.talentos.entity.Profile;
 import com.vilt.talentos.entity.User;
 import com.vilt.talentos.mapper.ProfileMapper;
 import com.vilt.talentos.service.AdminService;
 import com.vilt.talentos.service.ProfileService;
+import com.vilt.talentos.service.ResourceEquipmentService;
 import com.vilt.talentos.service.ResourceService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -45,6 +48,9 @@ class AdminControllerTest extends BaseControllerTest {
     private ResourceService resourceService;
 
     @MockBean
+    private ResourceEquipmentService equipmentService;
+
+    @MockBean
     private ProfileMapper profileMapper;
 
     private Profile profile;
@@ -54,13 +60,7 @@ class AdminControllerTest extends BaseControllerTest {
     void setUp() {
         UUID id = UUID.randomUUID();
         profile = Profile.builder().id(id).status(DomainStatus.ACTIVE).user(User.builder().name("Test").build()).build();
-        profileResponse = new ProfileResponse(
-                id, "Test", "test@test.com", "Group",
-                null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-                DomainStatus.ACTIVE,
-                null, null, null, null, null, null, null, null,
-                List.of(), null, null
-        );
+        profileResponse = ProfileResponseFixtures.basic(id, "Test", "test@test.com", "Group", null, DomainStatus.ACTIVE);
     }
 
     @Test
@@ -93,13 +93,8 @@ class AdminControllerTest extends BaseControllerTest {
     @DisplayName("Deve listar perfis pendentes com sucesso")
     void pending_Success() throws Exception {
         profile.setStatus(DomainStatus.PENDING);
-        ProfileResponse pendingResponse = new ProfileResponse(
-                profile.getId(), "Test", "test@test.com", "Group",
-                null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-                DomainStatus.PENDING,
-                null, null, null, null, null, null, null, null,
-                List.of(), null, null
-        );
+        ProfileResponse pendingResponse = ProfileResponseFixtures.basic(
+                profile.getId(), "Test", "test@test.com", "Group", null, DomainStatus.PENDING);
         
         when(profileService.getByStatus(eq(DomainStatus.PENDING), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(profile)));
         when(profileMapper.toResponse(any(Profile.class))).thenReturn(pendingResponse);
@@ -127,13 +122,8 @@ class AdminControllerTest extends BaseControllerTest {
     @DisplayName("Deve atualizar perfil com sucesso")
     void update_Success() throws Exception {
         UUID id = profile.getId();
-        AdminUpdateRequest req = new AdminUpdateRequest(
-                "ACTIVE", "SENIOR",
-                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null,
-                null, null,
-                null, null
-        );
+        AdminUpdateRequest req = AdminUpdateRequestFixtures.withStatusAndSkills(
+                "ACTIVE", "SENIOR", null, null);
         
         when(profileService.adminUpdate(eq(id), any(AdminUpdateRequest.class))).thenReturn(profile);
         when(profileMapper.toResponse(profile)).thenReturn(profileResponse);

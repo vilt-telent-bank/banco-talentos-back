@@ -5,6 +5,8 @@ import com.vilt.talentos.dto.CreateResourceRequest;
 import com.vilt.talentos.entity.DomainStatus;
 import com.vilt.talentos.entity.Group;
 import com.vilt.talentos.entity.Profile;
+import com.vilt.talentos.entity.RegistrationStatus;
+import com.vilt.talentos.entity.ResourceStatus;
 import com.vilt.talentos.entity.User;
 import com.vilt.talentos.entity.UserRole;
 import com.vilt.talentos.exception.BadRequestException;
@@ -51,7 +53,7 @@ class ResourceServiceTest {
     private ResourceService resourceService;
 
     @Test
-    void createByAdmin_ShouldCreateUserProfileAndSendWelcomeEmail() {
+    void createByAdmin_ShouldCreatePendingProfileAndSendWelcomeEmail() {
         UUID groupId = UUID.randomUUID();
         Group group = Group.builder().id(groupId).name("Delivery").build();
         CreateResourceRequest request = new CreateResourceRequest(
@@ -92,7 +94,11 @@ class ResourceServiceTest {
 
         ArgumentCaptor<Profile> profileCaptor = ArgumentCaptor.forClass(Profile.class);
         verify(profileRepo).save(profileCaptor.capture());
-        assertEquals("12345678901", profileCaptor.getValue().getCpf());
+        Profile savedProfile = profileCaptor.getValue();
+        assertEquals("12345678901", savedProfile.getCpf());
+        assertEquals(DomainStatus.PENDING, savedProfile.getStatus());
+        assertEquals(ResourceStatus.AVAILABLE, savedProfile.getResourceStatus());
+        assertEquals(RegistrationStatus.NOT_REQUIRED, savedProfile.getRegistrationStatus());
 
         verify(emailService).sendResourceWelcomeEmail(
                 eq("joao@vilt-group.com"),

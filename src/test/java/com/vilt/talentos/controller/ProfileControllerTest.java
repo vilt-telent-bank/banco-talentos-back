@@ -2,6 +2,7 @@ package com.vilt.talentos.controller;
 
 import com.vilt.talentos.dto.ProfileRequest;
 import com.vilt.talentos.dto.ProfileResponse;
+import com.vilt.talentos.dto.ProfileResponseFixtures;
 import com.vilt.talentos.entity.DomainStatus;
 import com.vilt.talentos.entity.Profile;
 import com.vilt.talentos.mapper.ProfileMapper;
@@ -38,13 +39,8 @@ class ProfileControllerTest extends BaseControllerTest {
 
     @BeforeEach
     void setUp() {
-        profileResponse = new ProfileResponse(
-                UUID.randomUUID(), "Test", "test@test.com", "Group",
-                null, null, "Developer", null, null, null, null, null, null, null, null, null, null, null,
-                DomainStatus.ACTIVE,
-                null, null, null, null, null, null, null, null,
-                List.of(), null, null
-        );
+        profileResponse = ProfileResponseFixtures.basic(
+                UUID.randomUUID(), "Test", "test@test.com", "Group", "Developer", DomainStatus.ACTIVE);
     }
 
     @Test
@@ -72,13 +68,8 @@ class ProfileControllerTest extends BaseControllerTest {
                 Collections.emptyList()
         );
         Profile profile = Profile.builder().id(profileResponse.id()).build();
-        ProfileResponse seniorResponse = new ProfileResponse(
-                profile.getId(), "Test", "test@test.com", "Group",
-                null, null, "Senior Developer", null, null, null, null, null, null, null, null, null, null, null,
-                DomainStatus.ACTIVE,
-                null, null, null, null, null, null, null, null,
-                List.of(), null, null
-        );
+        ProfileResponse seniorResponse = ProfileResponseFixtures.basic(
+                profile.getId(), "Test", "test@test.com", "Group", "Senior Developer", DomainStatus.ACTIVE);
 
         when(profileService.createOrUpdate(eq(userId), any(ProfileRequest.class))).thenReturn(profile);
         when(profileMapper.toResponse(profile)).thenReturn(seniorResponse);
