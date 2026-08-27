@@ -35,7 +35,7 @@ public class ResourceEquipmentService {
         Profile profile = profileRepo.findById(profileId)
                 .orElseThrow(() -> new ResourceNotFoundException("Perfil não encontrado"));
 
-        EquipmentStatus status = parseStatus(req.status());
+        EquipmentStatus status = req.status();
         String notes = resolveNotes(status, req.notes());
 
         ResourceEquipment equipment = ResourceEquipment.builder()
@@ -65,7 +65,7 @@ public class ResourceEquipmentService {
         if (req.brandOs() != null) equipment.setBrandOs(req.brandOs());
         if (req.processor() != null) equipment.setProcessor(req.processor());
 
-        EquipmentStatus status = req.status() != null ? parseStatus(req.status()) : equipment.getStatus();
+        EquipmentStatus status = req.status() != null ? req.status() : equipment.getStatus();
         if (req.status() != null) {
             equipment.setStatus(status);
         }
@@ -87,14 +87,6 @@ public class ResourceEquipmentService {
     private void ensureProfileExists(UUID profileId) {
         if (!profileRepo.existsById(profileId)) {
             throw new ResourceNotFoundException("Perfil não encontrado");
-        }
-    }
-
-    private EquipmentStatus parseStatus(String status) {
-        try {
-            return EquipmentStatus.valueOf(status);
-        } catch (Exception e) {
-            throw new BadRequestException("Status de máquina inválido: " + status);
         }
     }
 

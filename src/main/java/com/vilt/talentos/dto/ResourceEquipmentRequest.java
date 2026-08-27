@@ -1,5 +1,6 @@
 package com.vilt.talentos.dto;
 
+import com.vilt.talentos.entity.EquipmentStatus;
 import jakarta.validation.constraints.NotNull;
 
 public record ResourceEquipmentRequest(
@@ -9,6 +10,6 @@ public record ResourceEquipmentRequest(
     String brandOs,
     String processor,
     @NotNull(message = "O status da máquina é obrigatório.")
-    String status,
+    EquipmentStatus status,
     String notes
 ) {}
