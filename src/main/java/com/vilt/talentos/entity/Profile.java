@@ -4,8 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -115,7 +118,60 @@ public class Profile extends BaseAuditableEntity {
     @Enumerated(EnumType.STRING)
     @Column(name = "registration_status")
     @Builder.Default
-    private RegistrationStatus registrationStatus = RegistrationStatus.NOT_REQUESTED;
+    private RegistrationStatus registrationStatus = RegistrationStatus.NOT_REQUIRED;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "resource_status", nullable = false, length = 50)
+    @Builder.Default
+    private ResourceStatus resourceStatus = ResourceStatus.AVAILABLE;
+
+    @Column(name = "registration_requested_at")
+    private LocalDate registrationRequestedAt;
+
+    @Column(name = "registration_notes", columnDefinition = "TEXT")
+    private String registrationNotes;
+
+    @Builder.Default
+    @Column(name = "has_client_machine", nullable = false)
+    private boolean hasClientMachine = false;
+
+    @Column(name = "contracting_area")
+    private String contractingArea;
+
+    @Column(name = "cost_center")
+    private String costCenter;
+
+    @Column(name = "project_entry_date")
+    private LocalDate projectEntryDate;
+
+    private Boolean billable;
+
+    @Column(name = "porto_onboarding")
+    private Boolean portoOnboarding;
+
+    @Column(name = "project_manager_name")
+    private String projectManagerName;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "allocation_project_id")
+    private Project allocationProject;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "allocation_squad_id")
+    private Squad allocationSquad;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "technical_proposal_status", length = 50)
+    private TechnicalProposalStatus technicalProposalStatus;
+
+    @Column(name = "technical_proposal_number", length = 100)
+    private String technicalProposalNumber;
+
+    @Column(name = "technical_proposal_sent_at")
+    private LocalDate technicalProposalSentAt;
+
+    @Column(name = "technical_proposal_notes", columnDefinition = "TEXT")
+    private String technicalProposalNotes;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -125,5 +181,9 @@ public class Profile extends BaseAuditableEntity {
     @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @Builder.Default
     private List<ProfileSkill> skills = new ArrayList<>();
+
+    @OneToMany(mappedBy = "profile", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
+    private Set<ResourceEquipment> equipments = new HashSet<>();
 
 }

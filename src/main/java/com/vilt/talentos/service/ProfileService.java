@@ -34,6 +34,8 @@ public class ProfileService {
     private final SkillRepository skillRepo;
     private final UserRepository userRepo;
     private final GroupRepository groupRepo;
+    private final ProjectRepository projectRepo;
+    private final SquadRepository squadRepo;
     private final TalentEvaluationService evaluationService;
     private final EmailService emailService;
     private final AppProperties appProperties;
@@ -142,10 +144,6 @@ public class ProfileService {
     }
 
     private Profile sanitizeProfileForResource(Profile profile) {
-        if (profile.getRegistrationStatus() == RegistrationStatus.REJECTED) {
-            profile.setRegistrationStatus(null);
-        }
-        // Soft skills são visíveis apenas para admins
         profile.getSkills().removeIf(ps -> ps.getSkill().getType() == SkillType.SOFT);
         return profile;
     }
@@ -230,6 +228,7 @@ public class ProfileService {
                 });
         
         DomainStatus oldStatus = profile.getStatus();
+        boolean wasAllocatedToProject = profile.getAllocationProject() != null;
         
         if (req.status() != null) {
             try {
@@ -248,6 +247,52 @@ public class ProfileService {
                 log.warn("Tentativa inválida de alterar perfil ID: {} para o status de registro desconhecido: '{}'. Status de registro ignorado.", profileId, req.registrationStatus());
             }
         }
+
+        if (profile.getRegistrationStatus() == RegistrationStatus.NOT_REQUIRED) {
+            profile.setRegistrationNumber(null);
+            profile.setRegistrationRequestedAt(null);
+            profile.setRegistrationNotes(null);
+        } else {
+            if (req.registrationNumber() != null) {
+                String number = req.registrationNumber().trim();
+                profile.setRegistrationNumber(number.isEmpty() ? null : number);
+            }
+            if (req.registrationRequestedAt() != null) {
+                profile.setRegistrationRequestedAt(req.registrationRequestedAt());
+            }
+            if (req.registrationNotes() != null) {
+                String notes = req.registrationNotes().trim();
+                profile.setRegistrationNotes(notes.isEmpty() ? null : notes);
+            }
+        }
+
+        if (req.technicalProposalStatus() != null && !req.technicalProposalStatus().isBlank()) {
+            try {
+                profile.setTechnicalProposalStatus(TechnicalProposalStatus.valueOf(req.technicalProposalStatus()));
+            } catch (IllegalArgumentException e) {
+                log.warn("Status de proposta técnica inválido '{}' para o perfil {}. Valor ignorado.", req.technicalProposalStatus(), profileId);
+            }
+        } else if (req.technicalProposalStatus() != null) {
+            profile.setTechnicalProposalStatus(null);
+        }
+
+        if (req.allocationProjectId() != null) {
+            Project project = projectRepo.findById(req.allocationProjectId())
+                    .orElseThrow(() -> new BadRequestException("Projeto não encontrado"));
+            profile.setAllocationProject(project);
+        } else {
+            profile.setAllocationProject(null);
+        }
+
+        if (req.allocationSquadId() != null) {
+            Squad squad = squadRepo.findById(req.allocationSquadId())
+                    .orElseThrow(() -> new BadRequestException("Squad não encontrada"));
+            profile.setAllocationSquad(squad);
+        } else {
+            profile.setAllocationSquad(null);
+        }
+
+        applyResourceStatusAutomation(profile, wasAllocatedToProject);
 
         if (req.groupId() != null) {
             var group = groupRepo.findById(req.groupId())
@@ -276,6 +321,25 @@ public class ProfileService {
         }
 
         return saved;
+    }
+
+    private void applyResourceStatusAutomation(Profile profile, boolean wasAllocatedToProject) {
+        boolean deallocated = wasAllocatedToProject && profile.getAllocationProject() == null;
+        if (deallocated) {
+            profile.setRegistrationStatus(RegistrationStatus.NOT_REQUIRED);
+            profile.setRegistrationNumber(null);
+            profile.setRegistrationRequestedAt(null);
+            profile.setRegistrationNotes(null);
+            profile.setResourceStatus(ResourceStatus.AVAILABLE);
+            log.info("Perfil {}: desalocado — matrícula resetada para NOT_REQUIRED e status do recurso AVAILABLE.",
+                    profile.getId());
+            return;
+        }
+
+        ResourceStatus next = ResourceStatus.fromRegistrationStatus(profile.getRegistrationStatus());
+        profile.setResourceStatus(next);
+        log.debug("Perfil {}: status do recurso sincronizado para {} a partir da matrícula {}.",
+                profile.getId(), next, profile.getRegistrationStatus());
     }
 
     private void reconcileSkills(Profile profile, List<SkillEntry> hardEntries, List<SkillEntry> softEntries) {

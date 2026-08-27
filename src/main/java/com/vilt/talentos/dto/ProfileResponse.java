@@ -2,11 +2,16 @@ package com.vilt.talentos.dto;
 
 import com.vilt.talentos.entity.DomainStatus;
 import com.vilt.talentos.entity.RegistrationStatus;
+import com.vilt.talentos.entity.ResourceStatus;
+import com.vilt.talentos.entity.TechnicalProposalStatus;
+import lombok.Builder;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+@Builder
 public record ProfileResponse(
     UUID id,
     String name,
@@ -26,6 +31,25 @@ public record ProfileResponse(
     Integer experienceYears,
     String registrationNumber,
     RegistrationStatus registrationStatus,
+    ResourceStatus resourceStatus,
+    LocalDate registrationRequestedAt,
+    String registrationNotes,
+    boolean hasClientMachine,
+    String contractingArea,
+    String costCenter,
+    LocalDate projectEntryDate,
+    Boolean billable,
+    Boolean portoOnboarding,
+    String projectManagerName,
+    UUID allocationProjectId,
+    String allocationProjectName,
+    UUID allocationSquadId,
+    String allocationSquadName,
+    TechnicalProposalStatus technicalProposalStatus,
+    String technicalProposalNumber,
+    LocalDate technicalProposalSentAt,
+    String technicalProposalNotes,
+    List<ResourceEquipmentResponse> equipments,
     DomainStatus status,
     String contact,
     String contactEmail,

@@ -1,8 +1,12 @@
 package com.vilt.talentos.dto;
 
+import lombok.Builder;
+
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+@Builder
 public record AdminUpdateRequest(
     String status,
     String levelOverride,
@@ -22,6 +26,21 @@ public record AdminUpdateRequest(
     String codeReviewRole,
     String registrationNumber,
     String registrationStatus,
+    LocalDate registrationRequestedAt,
+    String registrationNotes,
+    Boolean hasClientMachine,
+    String contractingArea,
+    String costCenter,
+    LocalDate projectEntryDate,
+    Boolean billable,
+    Boolean portoOnboarding,
+    String projectManagerName,
+    UUID allocationProjectId,
+    UUID allocationSquadId,
+    String technicalProposalStatus,
+    String technicalProposalNumber,
+    LocalDate technicalProposalSentAt,
+    String technicalProposalNotes,
     String contact,
     String contactEmail,
     String phone,

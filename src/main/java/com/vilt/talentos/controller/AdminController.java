@@ -5,12 +5,14 @@ import com.vilt.talentos.dto.CreateResourceRequest;
 import com.vilt.talentos.dto.CreateResourceResponse;
 import com.vilt.talentos.dto.DashboardKpisResponse;
 import com.vilt.talentos.dto.ProfileResponse;
+import com.vilt.talentos.dto.ResourceEquipmentRequest;
+import com.vilt.talentos.dto.ResourceEquipmentResponse;
 import com.vilt.talentos.entity.DomainStatus;
-import com.vilt.talentos.entity.Profile;
 import com.vilt.talentos.entity.User;
 import com.vilt.talentos.mapper.ProfileMapper;
 import com.vilt.talentos.service.AdminService;
 import com.vilt.talentos.service.ProfileService;
+import com.vilt.talentos.service.ResourceEquipmentService;
 import com.vilt.talentos.service.ResourceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -39,6 +41,7 @@ public class AdminController {
     private final ProfileService profileService;
     private final AdminService adminService;
     private final ResourceService resourceService;
+    private final ResourceEquipmentService equipmentService;
     private final ProfileMapper profileMapper;
 
     @GetMapping("/profiles")
@@ -76,6 +79,37 @@ public class AdminController {
     @Operation(summary = "Cadastrar recurso", description = "Cria um usuário recurso com senha provisória e envia as credenciais por e-mail.")
     public CreateResourceResponse createResource(@RequestBody @Valid CreateResourceRequest request) {
         return resourceService.createByAdmin(request);
+    }
+
+    @GetMapping("/profiles/{id}/equipments")
+    @Operation(summary = "Listar equipamentos do recurso")
+    public List<ResourceEquipmentResponse> listEquipments(@PathVariable UUID id) {
+        return equipmentService.listByProfile(id).stream()
+                .map(profileMapper::toEquipmentResponse)
+                .toList();
+    }
+
+    @PostMapping("/profiles/{id}/equipments")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Adicionar equipamento ao recurso")
+    public ResourceEquipmentResponse createEquipment(@PathVariable UUID id,
+                                                     @RequestBody @Valid ResourceEquipmentRequest request) {
+        return profileMapper.toEquipmentResponse(equipmentService.create(id, request));
+    }
+
+    @PutMapping("/profiles/{id}/equipments/{equipmentId}")
+    @Operation(summary = "Atualizar equipamento do recurso")
+    public ResourceEquipmentResponse updateEquipment(@PathVariable UUID id,
+                                                     @PathVariable UUID equipmentId,
+                                                     @RequestBody @Valid ResourceEquipmentRequest request) {
+        return profileMapper.toEquipmentResponse(equipmentService.update(id, equipmentId, request));
+    }
+
+    @DeleteMapping("/profiles/{id}/equipments/{equipmentId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Remover equipamento do recurso")
+    public void deleteEquipment(@PathVariable UUID id, @PathVariable UUID equipmentId) {
+        equipmentService.delete(id, equipmentId);
     }
 
     @GetMapping("/dashboard")
