@@ -75,7 +75,7 @@ public class ResourceService {
         Profile profile = Profile.builder()
                 .user(user)
                 .cpf(cpf)
-                .status(DomainStatus.ACTIVE)
+                .status(DomainStatus.PENDING)
                 .registrationStatus(RegistrationStatus.NOT_REQUIRED)
                 .resourceStatus(ResourceStatus.AVAILABLE)
                 .build();

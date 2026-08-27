@@ -53,7 +53,7 @@ class ResourceServiceTest {
     private ResourceService resourceService;
 
     @Test
-    void createByAdmin_ShouldCreateUserProfileAndSendWelcomeEmail() {
+    void createByAdmin_ShouldCreatePendingProfileAndSendWelcomeEmail() {
         UUID groupId = UUID.randomUUID();
         Group group = Group.builder().id(groupId).name("Delivery").build();
         CreateResourceRequest request = new CreateResourceRequest(
@@ -96,6 +96,7 @@ class ResourceServiceTest {
         verify(profileRepo).save(profileCaptor.capture());
         Profile savedProfile = profileCaptor.getValue();
         assertEquals("12345678901", savedProfile.getCpf());
+        assertEquals(DomainStatus.PENDING, savedProfile.getStatus());
         assertEquals(ResourceStatus.AVAILABLE, savedProfile.getResourceStatus());
         assertEquals(RegistrationStatus.NOT_REQUIRED, savedProfile.getRegistrationStatus());
 

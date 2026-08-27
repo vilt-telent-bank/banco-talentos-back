@@ -76,7 +76,7 @@ public class AdminController {
 
     @PostMapping("/resources")
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Cadastrar recurso", description = "Cria um usuário recurso com senha provisória e envia as credenciais por e-mail.")
+    @Operation(summary = "Cadastrar recurso", description = "Cria um usuário recurso com senha provisória. O perfil inicia como PENDENTE na fila de revisão e as credenciais são enviadas por e-mail.")
     public CreateResourceResponse createResource(@RequestBody @Valid CreateResourceRequest request) {
         return resourceService.createByAdmin(request);
     }
