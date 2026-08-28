@@ -2,19 +2,25 @@ package com.vilt.talentos.service;
 
 import com.vilt.talentos.config.AppProperties;
 import com.vilt.talentos.dto.AdminUpdateRequest;
+import com.vilt.talentos.dto.AdminUpdateRequestFixtures;
 import com.vilt.talentos.dto.ProfileRequest;
 import com.vilt.talentos.dto.SkillEntry;
 import com.vilt.talentos.entity.DomainStatus;
 import com.vilt.talentos.entity.ExperienceLevel;
 import com.vilt.talentos.entity.Profile;
 import com.vilt.talentos.entity.ProfileSkill;
+import com.vilt.talentos.entity.Project;
+import com.vilt.talentos.entity.RegistrationStatus;
+import com.vilt.talentos.entity.ResourceStatus;
 import com.vilt.talentos.entity.Skill;
 import com.vilt.talentos.entity.SkillType;
 import com.vilt.talentos.entity.User;
 import com.vilt.talentos.mapper.ProfileMapper;
 import com.vilt.talentos.repository.GroupRepository;
 import com.vilt.talentos.repository.ProfileRepository;
+import com.vilt.talentos.repository.ProjectRepository;
 import com.vilt.talentos.repository.SkillRepository;
+import com.vilt.talentos.repository.SquadRepository;
 import com.vilt.talentos.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,6 +54,10 @@ class ProfileServiceTest {
     private SkillRepository skillRepo;
     @Mock
     private GroupRepository groupRepo;
+    @Mock
+    private ProjectRepository projectRepo;
+    @Mock
+    private SquadRepository squadRepo;
 
     @InjectMocks
     private ProfileService profileService;
@@ -99,11 +109,8 @@ class ProfileServiceTest {
                 .build();
         ps.setProfile(profile);
 
-        AdminUpdateRequest req = new AdminUpdateRequest(
+        AdminUpdateRequest req = AdminUpdateRequestFixtures.withStatusAndSkills(
                 "ACTIVE", "SENIOR",
-                null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null,
-                null, null,
                 java.util.List.of(new SkillEntry("TYPESCRIPT", 7)),
                 java.util.List.of(new SkillEntry("ADAPTABILIDADE E FLEXIBILIDADE", 10))
         );
@@ -122,5 +129,132 @@ class ProfileServiceTest {
         boolean hasTypeScript = result.getSkills().stream()
                 .anyMatch(pSkill -> pSkill.getSkill().getName().equals("TYPESCRIPT") && pSkill.getSkill().getType() == SkillType.HARD);
         org.junit.jupiter.api.Assertions.assertTrue(hasTypeScript);
+    }
+
+    @Test
+    void adminUpdate_shouldSetWaitingWhenRegistrationIsInProgress() {
+        UUID profileId = UUID.randomUUID();
+        Profile profile = Profile.builder()
+                .id(profileId)
+                .user(User.builder().email("test@vilt-group.com").build())
+                .status(DomainStatus.ACTIVE)
+                .registrationStatus(RegistrationStatus.NOT_REQUIRED)
+                .resourceStatus(ResourceStatus.AVAILABLE)
+                .skills(new java.util.ArrayList<>())
+                .build();
+
+        AdminUpdateRequest req = AdminUpdateRequestFixtures.withRegistrationStatus("REQUESTED_VIA_TICKET");
+
+        when(profileRepo.findById(profileId)).thenReturn(Optional.of(profile));
+        when(profileRepo.save(any(Profile.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Profile result = profileService.adminUpdate(profileId, req);
+
+        assertEquals(RegistrationStatus.REQUESTED_VIA_TICKET, result.getRegistrationStatus());
+        assertEquals(ResourceStatus.WAITING, result.getResourceStatus());
+    }
+
+    @Test
+    void adminUpdate_ca009_shouldSetWaitingForAnyRegistrationOtherThanNotRequiredExceptReleased() {
+        for (String status : java.util.List.of(
+                "REQUESTED_VIA_TICKET",
+                "TICKET_AWAITING_APPROVAL",
+                "TICKET_AWAITING_SERVICE"
+        )) {
+            UUID profileId = UUID.randomUUID();
+            Profile profile = Profile.builder()
+                    .id(profileId)
+                    .user(User.builder().email("test@vilt-group.com").build())
+                    .status(DomainStatus.ACTIVE)
+                    .registrationStatus(RegistrationStatus.NOT_REQUIRED)
+                    .resourceStatus(ResourceStatus.AVAILABLE)
+                    .skills(new java.util.ArrayList<>())
+                    .build();
+
+            when(profileRepo.findById(profileId)).thenReturn(Optional.of(profile));
+            when(profileRepo.save(any(Profile.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            Profile result = profileService.adminUpdate(
+                    profileId,
+                    AdminUpdateRequestFixtures.withRegistrationStatus(status)
+            );
+
+            assertEquals(ResourceStatus.WAITING, result.getResourceStatus(),
+                    "CA009: matrícula " + status + " deve gerar Status do Recurso Aguardando");
+        }
+    }
+
+    @Test
+    void adminUpdate_ca010_shouldSetAllocatedWhenRegistrationIsReleased() {
+        UUID profileId = UUID.randomUUID();
+        Profile profile = Profile.builder()
+                .id(profileId)
+                .user(User.builder().email("test@vilt-group.com").build())
+                .status(DomainStatus.ACTIVE)
+                .registrationStatus(RegistrationStatus.REQUESTED_VIA_TICKET)
+                .resourceStatus(ResourceStatus.WAITING)
+                .skills(new java.util.ArrayList<>())
+                .build();
+
+        AdminUpdateRequest req = AdminUpdateRequestFixtures.withRegistrationStatus("RELEASED");
+
+        when(profileRepo.findById(profileId)).thenReturn(Optional.of(profile));
+        when(profileRepo.save(any(Profile.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Profile result = profileService.adminUpdate(profileId, req);
+
+        assertEquals(RegistrationStatus.RELEASED, result.getRegistrationStatus());
+        assertEquals(ResourceStatus.ALLOCATED, result.getResourceStatus(),
+                "CA010: matrícula Liberada deve gerar Status do Recurso Alocado");
+    }
+
+    @Test
+    void adminUpdate_ca011_shouldSetAvailableWhenRegistrationReturnsToNotRequired() {
+        UUID profileId = UUID.randomUUID();
+        Profile profile = Profile.builder()
+                .id(profileId)
+                .user(User.builder().email("test@vilt-group.com").build())
+                .status(DomainStatus.ACTIVE)
+                .registrationStatus(RegistrationStatus.RELEASED)
+                .resourceStatus(ResourceStatus.ALLOCATED)
+                .skills(new java.util.ArrayList<>())
+                .build();
+
+        AdminUpdateRequest req = AdminUpdateRequestFixtures.withRegistrationStatus("NOT_REQUIRED");
+
+        when(profileRepo.findById(profileId)).thenReturn(Optional.of(profile));
+        when(profileRepo.save(any(Profile.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Profile result = profileService.adminUpdate(profileId, req);
+
+        assertEquals(RegistrationStatus.NOT_REQUIRED, result.getRegistrationStatus());
+        assertEquals(ResourceStatus.AVAILABLE, result.getResourceStatus(),
+                "CA011: matrícula Não Necessário deve retornar Status do Recurso para Disponível");
+    }
+
+    @Test
+    void adminUpdate_ca011_shouldResetRegistrationAndResourceStatusOnProjectDeallocation() {
+        UUID profileId = UUID.randomUUID();
+        Project project = Project.builder().id(UUID.randomUUID()).name("Portal").build();
+        Profile profile = Profile.builder()
+                .id(profileId)
+                .user(User.builder().email("test@vilt-group.com").build())
+                .status(DomainStatus.ACTIVE)
+                .registrationStatus(RegistrationStatus.RELEASED)
+                .resourceStatus(ResourceStatus.ALLOCATED)
+                .allocationProject(project)
+                .skills(new java.util.ArrayList<>())
+                .build();
+
+        AdminUpdateRequest req = AdminUpdateRequestFixtures.withRegistrationStatus("RELEASED");
+
+        when(profileRepo.findById(profileId)).thenReturn(Optional.of(profile));
+        when(profileRepo.save(any(Profile.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        Profile result = profileService.adminUpdate(profileId, req);
+
+        assertEquals(null, result.getAllocationProject());
+        assertEquals(RegistrationStatus.NOT_REQUIRED, result.getRegistrationStatus());
+        assertEquals(ResourceStatus.AVAILABLE, result.getResourceStatus());
     }
 }
